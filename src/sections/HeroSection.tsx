@@ -6,7 +6,6 @@ import { ChevronDown } from 'lucide-react';
 export default function HeroSection() {
   const { containerRef, videoRef, overlayRef, contentRef } = useHeroParallax();
   const [showScroll, setShowScroll] = useState(true);
-  const [imageLoaded, setImageLoaded] = useState(false);
   const textRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
@@ -68,10 +67,7 @@ export default function HeroSection() {
         <img
           src="/assets/hero.jpeg"
           alt=""
-          onLoad={() => setImageLoaded(true)}
-          className={`w-full h-full object-cover transition-opacity duration-1000 ${
-            imageLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
+          className="w-full h-full object-cover"
         />
       </div>
 
