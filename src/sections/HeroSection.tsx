@@ -6,7 +6,7 @@ import { ChevronDown } from 'lucide-react';
 export default function HeroSection() {
   const { containerRef, videoRef, overlayRef, contentRef } = useHeroParallax();
   const [showScroll, setShowScroll] = useState(true);
-  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const textRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
@@ -63,22 +63,16 @@ export default function HeroSection() {
       className="relative w-full overflow-hidden"
       style={{ height: '100vh', minHeight: 600 }}
     >
-      {/* Layer 0 — Video Background */}
+      {/* Layer 0 — Image Background */}
       <div ref={videoRef} className="absolute inset-0 z-0">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="none"
-          onLoadedData={() => setVideoLoaded(true)}
+        <img
+          src="/assets/hero.jpeg"
+          alt=""
+          onLoad={() => setImageLoaded(true)}
           className={`w-full h-full object-cover transition-opacity duration-1000 ${
-            videoLoaded ? 'opacity-100' : 'opacity-0'
+            imageLoaded ? 'opacity-100' : 'opacity-0'
           }`}
-          poster="/assets/hero-poster.jpg"
-        >
-          <source src="/assets/hero-bg-video.mp4" type="video/mp4" />
-        </video>
+        />
       </div>
 
       {/* Layer 1 — Gradient Overlay */}
