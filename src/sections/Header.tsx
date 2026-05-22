@@ -58,6 +58,9 @@ export default function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
+            <button onClick={() => scrollToSection('sobre')} className="nav-link text-white uppercase tracking-[0.08em] text-sm font-medium">
+              <span className="tr" data-pt="Sobre" data-en="About">Sobre</span>
+            </button>
             <button onClick={() => scrollToSection('app')} className="nav-link text-white uppercase tracking-[0.08em] text-sm font-medium">
               <span className="tr" data-pt="App" data-en="App">App</span>
             </button>
@@ -111,6 +114,13 @@ export default function Header() {
           <X size={28} />
         </button>
 
+        <button
+          onClick={() => scrollToSection('sobre')}
+          className="text-white text-3xl font-bold uppercase tracking-tight"
+          style={{ fontFamily: 'var(--font-display)' }}
+        >
+          <span className="tr" data-pt="Sobre" data-en="About">Sobre</span>
+        </button>
         <button
           onClick={() => scrollToSection('app')}
           className="text-white text-3xl font-bold uppercase tracking-tight"
