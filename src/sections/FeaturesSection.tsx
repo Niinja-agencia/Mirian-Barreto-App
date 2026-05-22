@@ -87,7 +87,7 @@ function FeatureBlock({
         } reveal-pattern-a`}
       >
         <span
-          className="uppercase tracking-[0.12em] text-xs font-medium"
+          className="uppercase tracking-[0.12em] text-sm font-medium"
           style={{ color: 'var(--color-rose)' }}
         >
           {currentLang === 'pt' ? feature.eyebrowPt : feature.eyebrowEn}
@@ -97,13 +97,13 @@ function FeatureBlock({
           className="mt-4 font-semibold leading-tight text-[var(--color-black)]"
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(1.5rem, 3vw, 2.5rem)',
+            fontSize: 'clamp(1.875rem, 3.2vw, 2.75rem)',
           }}
         >
           {currentLang === 'pt' ? feature.titlePt : feature.titleEn}
         </h3>
 
-        <p className="mt-4 text-[var(--color-medium-grey)] font-light leading-relaxed" style={{ fontSize: 'clamp(1rem, 1.5vw, 1.15rem)' }}>
+        <p className="mt-5 text-[var(--color-medium-grey)] font-light leading-relaxed" style={{ fontSize: 'clamp(1.0625rem, 1.5vw, 1.2rem)' }}>
           {currentLang === 'pt' ? feature.descPt : feature.descEn}
         </p>
 
@@ -111,7 +111,7 @@ function FeatureBlock({
           {(currentLang === 'pt' ? feature.tagsPt : feature.tagsEn).map((tag) => (
             <span
               key={tag}
-              className="bg-[rgba(10,10,10,0.05)] px-3 py-1.5 rounded text-xs uppercase tracking-[0.08em] font-medium text-[var(--color-black)]"
+              className="bg-[rgba(10,10,10,0.05)] px-3 py-1.5 rounded text-sm uppercase tracking-[0.08em] font-medium text-[var(--color-black)]"
             >
               {tag}
             </span>
@@ -140,7 +140,7 @@ export default function FeaturesSection() {
           className={`text-center mb-16 ${headerVisible ? 'reveal-visible' : ''} reveal-pattern-a`}
         >
           <span
-            className="uppercase tracking-[0.12em] text-xs font-medium"
+            className="uppercase tracking-[0.12em] text-sm font-medium"
             style={{ color: 'var(--color-rose)' }}
           >
             <span className="tr" data-pt="O APLICATIVO" data-en="THE APP">

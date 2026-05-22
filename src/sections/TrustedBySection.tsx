@@ -10,15 +10,15 @@ export default function TrustedBySection() {
       className="relative bg-[var(--color-black)]"
       style={{ padding: '40px var(--page-padding)' }}
     >
-      <div className="flex items-center gap-6 max-w-[1440px] mx-auto">
-        <div className="flex-1 h-px bg-[var(--color-divider)]" />
+      <div className="flex items-center gap-4 md:gap-6 max-w-[1440px] mx-auto">
+        <div className="hidden md:block flex-1 h-px bg-[var(--color-divider)]" />
         <div
-          className={`flex items-center gap-3 transition-all duration-700 ${
+          className={`flex items-center gap-3 transition-all duration-700 mx-auto md:mx-0 ${
             isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
-          <Heart size={14} className="text-[var(--color-rose)]" fill="var(--color-rose)" />
-          <span className="uppercase tracking-[0.12em] text-xs font-medium text-[var(--color-medium-grey)] whitespace-nowrap">
+          <Heart size={14} className="text-[var(--color-rose)] shrink-0" fill="var(--color-rose)" />
+          <span className="uppercase tracking-[0.12em] text-xs md:text-sm font-medium text-[var(--color-medium-grey)] text-center md:whitespace-nowrap">
             <span
               className="tr"
               data-pt="Junte-se a milhares de mulheres que já transformaram seus corpos"
@@ -27,9 +27,9 @@ export default function TrustedBySection() {
               Junte-se a milhares de mulheres que já transformaram seus corpos
             </span>
           </span>
-          <Heart size={14} className="text-[var(--color-rose)]" fill="var(--color-rose)" />
+          <Heart size={14} className="text-[var(--color-rose)] shrink-0" fill="var(--color-rose)" />
         </div>
-        <div className="flex-1 h-px bg-[var(--color-divider)]" />
+        <div className="hidden md:block flex-1 h-px bg-[var(--color-divider)]" />
       </div>
     </div>
   );

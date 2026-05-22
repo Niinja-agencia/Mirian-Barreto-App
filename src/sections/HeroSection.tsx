@@ -164,6 +164,24 @@ export default function HeroSection() {
               </span>
             </button>
           </div>
+
+          {/* Secondary link — existing students */}
+          <div
+            ref={(el) => { textRefs.current[5] = el; }}
+            className="opacity-0 translate-y-6 mt-6"
+          >
+            {/* TODO: trocar href para a URL real de login do app */}
+            <a
+              href="#login"
+              className="inline-flex items-center gap-2 text-[rgba(255,255,255,0.7)] hover:text-white text-sm uppercase tracking-[0.08em] font-medium border-b border-[rgba(255,255,255,0.3)] hover:border-white pb-1 transition-colors duration-300"
+              aria-label="Acesso para alunas existentes"
+            >
+              <span className="tr" data-pt="Já sou aluna — Entrar" data-en="I'm already a student — Sign in">
+                Já sou aluna — Entrar
+              </span>
+              <span aria-hidden="true">→</span>
+            </a>
+          </div>
         </div>
 
         {/* Social Proof Bar */}
