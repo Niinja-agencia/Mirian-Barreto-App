@@ -50,10 +50,14 @@ export default function Header() {
           {/* Logo */}
           <button
             onClick={() => scrollToSection('hero')}
-            className="text-white font-semibold text-xl tracking-tight"
-            style={{ fontFamily: 'var(--font-display)' }}
+            aria-label="Mirian Barreto — início"
+            className="flex items-center"
           >
-            Mirian Barreto
+            <img
+              src="/assets/logo-mirian.png"
+              alt="Mirian Barreto"
+              className="h-12 md:h-14 w-auto"
+            />
           </button>
 
           {/* Desktop Nav */}

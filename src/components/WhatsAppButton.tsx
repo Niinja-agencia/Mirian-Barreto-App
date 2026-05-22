@@ -1,7 +1,7 @@
 import { useLanguage } from '@/context/LanguageContext';
 
-// TODO: trocar pelo número real da Mirian (formato internacional, só dígitos)
-const PHONE_NUMBER = '5500000000000';
+// Número da Mirian (formato internacional, só dígitos). Mesmo usado no Footer.
+const PHONE_NUMBER = '553191809387';
 
 const MESSAGES = {
   pt: 'Olá! Quero saber mais sobre os treinos com a Mirian.',

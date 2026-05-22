@@ -25,12 +25,11 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
           {/* Brand Column */}
           <div>
-            <h3
-              className="text-white font-semibold text-xl tracking-tight"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              Mirian Barreto
-            </h3>
+            <img
+              src="/assets/logo-mirian.png"
+              alt="Mirian Barreto"
+              className="h-16 w-auto"
+            />
             <p className="mt-4 text-[var(--color-medium-grey)] font-light text-sm leading-relaxed">
               <span className="tr" data-pt="Transforme seu corpo. Treine de qualquer lugar." data-en="Transform your body. Train from anywhere.">
                 Transforme seu corpo. Treine de qualquer lugar.
