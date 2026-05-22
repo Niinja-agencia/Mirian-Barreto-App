@@ -49,7 +49,7 @@ export default function HeroSection() {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      const offset = 80;
+      const offset = 96;
       const top = element.getBoundingClientRect().top + window.scrollY - offset;
       window.scrollTo({ top, behavior: 'smooth' });
     }
@@ -163,23 +163,15 @@ export default function HeroSection() {
                 Ver Planos
               </span>
             </button>
-          </div>
-
-          {/* Secondary link — existing students */}
-          <div
-            ref={(el) => { textRefs.current[5] = el; }}
-            className="opacity-0 translate-y-6 mt-6"
-          >
             {/* TODO: trocar href para a URL real de login do app */}
             <a
               href="#login"
-              className="inline-flex items-center gap-2 text-[rgba(255,255,255,0.7)] hover:text-white text-sm uppercase tracking-[0.08em] font-medium border-b border-[rgba(255,255,255,0.3)] hover:border-white pb-1 transition-colors duration-300"
+              className="border border-white text-white uppercase tracking-[0.08em] text-sm font-medium px-8 py-4 hover:bg-[rgba(255,255,255,0.1)] transition-all duration-300 text-center"
               aria-label="Acesso para alunas existentes"
             >
-              <span className="tr" data-pt="Já sou aluna — Entrar" data-en="I'm already a student — Sign in">
-                Já sou aluna — Entrar
+              <span className="tr" data-pt="Já sou aluna" data-en="I'm already a student">
+                Já sou aluna
               </span>
-              <span aria-hidden="true">→</span>
             </a>
           </div>
         </div>

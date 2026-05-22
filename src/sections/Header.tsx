@@ -27,7 +27,7 @@ export default function Header() {
     setIsMenuOpen(false);
     const element = document.getElementById(id);
     if (element) {
-      const offset = 80;
+      const offset = 96;
       const top = element.getBoundingClientRect().top + window.scrollY - offset;
       window.scrollTo({ top, behavior: 'smooth' });
     }
@@ -41,7 +41,7 @@ export default function Header() {
             ? 'bg-[rgba(10,10,10,0.9)] backdrop-blur-[20px] border-b border-[rgba(255,255,255,0.06)]'
             : 'bg-transparent'
         }`}
-        style={{ height: 80 }}
+        style={{ height: 96 }}
       >
         <div
           className="flex items-center justify-between h-full mx-auto"
@@ -56,7 +56,7 @@ export default function Header() {
             <img
               src="/assets/logo-mirian.png"
               alt="Mirian Barreto"
-              className="h-12 md:h-14 w-auto"
+              className="h-16 md:h-20 w-auto"
             />
           </button>
 

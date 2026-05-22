@@ -7,7 +7,7 @@ export default function Footer() {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      const offset = 80;
+      const offset = 96;
       const top = element.getBoundingClientRect().top + window.scrollY - offset;
       window.scrollTo({ top, behavior: 'smooth' });
     }
@@ -125,7 +125,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between border-t border-[var(--color-divider)] pt-8 mt-16 gap-4">
           <p className="uppercase tracking-[0.08em] text-xs font-medium text-[var(--color-medium-grey)]">
-            © 2025 Mirian Barreto. <span className="tr" data-pt="Todos os direitos reservados." data-en="All rights reserved.">Todos os direitos reservados.</span>
+            © 2026 Mirian Barreto. <span className="tr" data-pt="Todos os direitos reservados." data-en="All rights reserved.">Todos os direitos reservados.</span>
           </p>
           <div className="flex items-center gap-4">
             <a href="#" className="uppercase tracking-[0.08em] text-xs font-medium text-[var(--color-medium-grey)] hover:text-white transition-colors duration-300">
