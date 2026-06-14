@@ -1,0 +1,309 @@
+import { useEffect, useState } from 'react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import { TextInput, SubmitButton } from '@/components/form';
+import Modal from '@/components/Modal';
+import { formatDuration, LEVEL_LABELS } from '@/lib/format';
+import type { Workout, WorkoutCategory, FitnessLevel } from '@/lib/database.types';
+import FullScreenLoader from '@/components/FullScreenLoader';
+
+interface FormState {
+  id: string;
+  title_pt: string;
+  title_en: string;
+  description_pt: string;
+  description_en: string;
+  category_id: string;
+  level: FitnessLevel;
+  duration_min: number;
+  required_tier: number;
+  published: boolean;
+  video_path: string | null;
+  thumbnail_path: string | null;
+}
+
+const empty: FormState = {
+  id: '',
+  title_pt: '',
+  title_en: '',
+  description_pt: '',
+  description_en: '',
+  category_id: '',
+  level: 'iniciante',
+  duration_min: 0,
+  required_tier: 1,
+  published: false,
+  video_path: null,
+  thumbnail_path: null,
+};
+
+async function uploadTo(bucket: string, file: File): Promise<string> {
+  const ext = file.name.split('.').pop();
+  const path = `${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
+  if (error) throw error;
+  return path;
+}
+
+export default function AdminWorkouts() {
+  const [rows, setRows] = useState<Workout[]>([]);
+  const [cats, setCats] = useState<WorkoutCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<FormState>({ ...empty });
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  async function load() {
+    const [{ data: w }, { data: c }] = await Promise.all([
+      supabase.from('workouts').select('*').order('sort_order'),
+      supabase.from('workout_categories').select('*').order('sort_order'),
+    ]);
+    setRows(w ?? []);
+    setCats(c ?? []);
+    setLoading(false);
+  }
+  useEffect(() => {
+    load();
+  }, []);
+
+  function openNew() {
+    setForm({ ...empty, category_id: cats[0]?.id ?? '' });
+    setOpen(true);
+  }
+  function openEdit(w: Workout) {
+    setForm({
+      id: w.id,
+      title_pt: w.title_pt,
+      title_en: w.title_en,
+      description_pt: w.description_pt ?? '',
+      description_en: w.description_en ?? '',
+      category_id: w.category_id ?? '',
+      level: w.level,
+      duration_min: Math.round(w.duration_seconds / 60),
+      required_tier: w.required_tier,
+      published: w.published,
+      video_path: w.video_path,
+      thumbnail_path: w.thumbnail_path,
+    });
+    setOpen(true);
+  }
+
+  async function handleFile(bucket: 'workout-videos' | 'thumbnails', file: File | null) {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const path = await uploadTo(bucket, file);
+      setForm((f) => ({
+        ...f,
+        ...(bucket === 'workout-videos' ? { video_path: path } : { thumbnail_path: path }),
+      }));
+      toast.success('Upload concluído.');
+    } catch (e) {
+      toast.error('Falha no upload: ' + (e as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    const payload = {
+      title_pt: form.title_pt.trim(),
+      title_en: form.title_en.trim(),
+      description_pt: form.description_pt.trim() || null,
+      description_en: form.description_en.trim() || null,
+      category_id: form.category_id || null,
+      level: form.level,
+      duration_seconds: Math.round(form.duration_min * 60),
+      required_tier: Number(form.required_tier),
+      published: form.published,
+      video_path: form.video_path,
+      thumbnail_path: form.thumbnail_path,
+    };
+    const { error } = form.id
+      ? await supabase.from('workouts').update(payload).eq('id', form.id)
+      : await supabase.from('workouts').insert(payload);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success('Treino salvo!');
+    setOpen(false);
+    load();
+  }
+
+  async function togglePublish(w: Workout) {
+    await supabase.from('workouts').update({ published: !w.published }).eq('id', w.id);
+    load();
+  }
+
+  async function remove(id: string) {
+    if (!confirm('Excluir este treino?')) return;
+    const { error } = await supabase.from('workouts').delete().eq('id', id);
+    if (error) return toast.error(error.message);
+    load();
+  }
+
+  if (loading) return <FullScreenLoader />;
+
+  const catName = (id: string | null) => cats.find((c) => c.id === id)?.name_pt ?? '—';
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-[var(--color-black)]">Treinos</h1>
+        <button
+          onClick={openNew}
+          className="flex items-center gap-2 rounded-lg bg-[var(--color-rose)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-rose-hover)]"
+        >
+          <Plus size={16} /> Novo treino
+        </button>
+      </div>
+
+      <div className="overflow-x-auto rounded-2xl bg-white" style={{ border: '1px solid var(--color-divider-dark)' }}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-[var(--color-divider-dark)] text-left text-[var(--color-medium-grey)]">
+              <th className="px-4 py-3 font-medium">Título</th>
+              <th className="px-4 py-3 font-medium">Categoria</th>
+              <th className="px-4 py-3 font-medium">Nível</th>
+              <th className="px-4 py-3 font-medium">Duração</th>
+              <th className="px-4 py-3 font-medium">Tier</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-6 text-center text-[var(--color-medium-grey)]">
+                  Nenhum treino cadastrado.
+                </td>
+              </tr>
+            ) : (
+              rows.map((w) => (
+                <tr key={w.id} className="border-b border-[var(--color-divider-dark)] last:border-0">
+                  <td className="px-4 py-3 text-[var(--color-black)]">{w.title_pt}</td>
+                  <td className="px-4 py-3 text-[var(--color-medium-grey)]">{catName(w.category_id)}</td>
+                  <td className="px-4 py-3 text-[var(--color-medium-grey)]">{LEVEL_LABELS[w.level]}</td>
+                  <td className="px-4 py-3 text-[var(--color-medium-grey)]">{formatDuration(w.duration_seconds)}</td>
+                  <td className="px-4 py-3 text-[var(--color-medium-grey)]">{w.required_tier}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => togglePublish(w)}
+                      className={`flex items-center gap-1 rounded px-2 py-1 text-xs font-medium ${
+                        w.published ? 'bg-green-100 text-green-700' : 'bg-[var(--color-warm-grey)] text-[var(--color-medium-grey)]'
+                      }`}
+                    >
+                      {w.published ? <Eye size={12} /> : <EyeOff size={12} />}
+                      {w.published ? 'Publicado' : 'Rascunho'}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => openEdit(w)} className="p-2 text-[var(--color-medium-grey)] hover:text-[var(--color-rose)]">
+                        <Pencil size={16} />
+                      </button>
+                      <button onClick={() => remove(w.id)} className="p-2 text-[var(--color-medium-grey)] hover:text-red-600">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <Modal open={open} onClose={() => setOpen(false)} title={form.id ? 'Editar treino' : 'Novo treino'}>
+        <form onSubmit={save} className="space-y-4">
+          <TextInput label="Título (PT)" value={form.title_pt} onChange={(e) => setForm({ ...form, title_pt: e.target.value })} required />
+          <TextInput label="Título (EN)" value={form.title_en} onChange={(e) => setForm({ ...form, title_en: e.target.value })} required />
+
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">Descrição (PT)</span>
+            <textarea
+              value={form.description_pt}
+              onChange={(e) => setForm({ ...form, description_pt: e.target.value })}
+              rows={2}
+              className="w-full rounded-lg border border-[var(--color-divider-dark)] px-3.5 py-2.5 text-sm"
+            />
+          </label>
+
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">Categoria</span>
+              <select
+                value={form.category_id}
+                onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                className="w-full rounded-lg border border-[var(--color-divider-dark)] px-3 py-2.5 text-sm"
+              >
+                {cats.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name_pt}</option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">Nível</span>
+              <select
+                value={form.level}
+                onChange={(e) => setForm({ ...form, level: e.target.value as FitnessLevel })}
+                className="w-full rounded-lg border border-[var(--color-divider-dark)] px-3 py-2.5 text-sm"
+              >
+                {Object.entries(LEVEL_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <TextInput label="Duração (min)" type="number" value={form.duration_min} onChange={(e) => setForm({ ...form, duration_min: Number(e.target.value) })} />
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">Plano mínimo (tier)</span>
+              <select
+                value={form.required_tier}
+                onChange={(e) => setForm({ ...form, required_tier: Number(e.target.value) })}
+                className="w-full rounded-lg border border-[var(--color-divider-dark)] px-3 py-2.5 text-sm"
+              >
+                <option value={1}>1 — Básico</option>
+                <option value={2}>2 — Premium</option>
+                <option value={3}>3 — VIP</option>
+              </select>
+            </label>
+          </div>
+
+          {/* Uploads */}
+          <div className="grid grid-cols-1 gap-3">
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">
+                Vídeo {form.video_path && <span className="text-green-600">✓ enviado</span>}
+              </span>
+              <input type="file" accept="video/*" onChange={(e) => handleFile('workout-videos', e.target.files?.[0] ?? null)} className="text-sm" />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">
+                Thumbnail {form.thumbnail_path && <span className="text-green-600">✓ enviada</span>}
+              </span>
+              <input type="file" accept="image/*" onChange={(e) => handleFile('thumbnails', e.target.files?.[0] ?? null)} className="text-sm" />
+            </label>
+            {uploading && (
+              <p className="flex items-center gap-2 text-sm text-[var(--color-medium-grey)]">
+                <Loader2 className="animate-spin" size={14} /> Enviando arquivo…
+              </p>
+            )}
+          </div>
+
+          <label className="flex items-center gap-2 text-sm text-[var(--color-black)]">
+            <input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} />
+            Publicado (visível para as alunas)
+          </label>
+
+          <SubmitButton loading={saving} disabled={uploading}>Salvar treino</SubmitButton>
+        </form>
+      </Modal>
+    </div>
+  );
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useLanguage } from '@/context/LanguageContext';
 import { Check, Shield, RotateCcw, XCircle } from 'lucide-react';
@@ -91,6 +92,7 @@ function PricingCard({
 }) {
   const { ref, isVisible } = useScrollReveal();
   const { currentLang } = useLanguage();
+  const navigate = useNavigate();
   const isHighlighted = plan.highlighted;
 
   return (
@@ -169,6 +171,7 @@ function PricingCard({
 
       {/* CTA */}
       <button
+        onClick={() => navigate(`/checkout/${plan.id}`)}
         className={`w-full py-3.5 uppercase tracking-[0.08em] text-sm font-medium transition-all duration-300 ${
           isHighlighted
             ? 'bg-[var(--color-rose)] text-[var(--color-black)] hover:bg-[var(--color-rose-hover)]'

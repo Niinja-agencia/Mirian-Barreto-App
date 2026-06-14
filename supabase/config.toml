@@ -1,0 +1,21 @@
+# Configuração do projeto Supabase (CLI).
+# Projeto dedicado da Mirian Barreto.
+project_id = "fzpmypayekcpwvhapgsk"
+
+[functions.video-url]
+verify_jwt = true
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.cancel-subscription]
+verify_jwt = true
+
+[functions.mp-webhook]
+verify_jwt = false
+
+[functions.send-emails]
+verify_jwt = false
+
+[functions.renewal-reminders]
+verify_jwt = false

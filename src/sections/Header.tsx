@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router';
 import { useLanguage } from '@/context/LanguageContext';
 import { Menu, X } from 'lucide-react';
 
@@ -84,13 +85,21 @@ export default function Header() {
               {currentLang === 'pt' ? 'EN' : 'PT'}
             </button>
 
+            {/* Entrar */}
+            <Link
+              to="/login"
+              className="nav-link text-white uppercase tracking-[0.08em] text-sm font-medium"
+            >
+              <span className="tr" data-pt="Entrar" data-en="Log in">Entrar</span>
+            </Link>
+
             {/* CTA */}
-            <button
-              onClick={() => scrollToSection('planos')}
+            <Link
+              to="/cadastro"
               className="cta-btn bg-[var(--color-rose)] text-[var(--color-black)] uppercase tracking-[0.08em] text-sm font-medium px-6 py-3"
             >
               <span className="tr" data-pt="Quero Começar" data-en="Get Started">Quero Começar</span>
-            </button>
+            </Link>
           </nav>
 
           {/* Mobile Hamburger */}
@@ -154,12 +163,22 @@ export default function Header() {
           {currentLang === 'pt' ? 'EN' : 'PT'}
         </button>
 
-        <button
-          onClick={() => scrollToSection('planos')}
+        <Link
+          to="/login"
+          onClick={() => setIsMenuOpen(false)}
+          className="text-white text-3xl font-bold uppercase tracking-tight"
+          style={{ fontFamily: 'var(--font-display)' }}
+        >
+          <span className="tr" data-pt="Entrar" data-en="Log in">Entrar</span>
+        </Link>
+
+        <Link
+          to="/cadastro"
+          onClick={() => setIsMenuOpen(false)}
           className="cta-btn bg-[var(--color-rose)] text-[var(--color-black)] uppercase tracking-[0.08em] text-sm font-medium px-8 py-4 mt-4"
         >
           <span className="tr" data-pt="Quero Começar" data-en="Get Started">Quero Começar</span>
-        </button>
+        </Link>
       </div>
     </>
   );
