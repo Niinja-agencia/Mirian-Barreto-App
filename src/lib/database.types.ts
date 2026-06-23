@@ -112,6 +112,17 @@ export type WorkoutProgress = {
   completed_at: string;
 };
 
+export type Announcement = {
+  id: string;
+  title_pt: string;
+  title_en: string;
+  body_pt: string | null;
+  body_en: string | null;
+  pinned: boolean;
+  published: boolean;
+  created_at: string;
+};
+
 // Helper de tabela no formato esperado pelo supabase-js (GenericTable).
 // Row é tipado nas leituras; Insert/Update aceitam payloads parciais.
 type T<Row extends Record<string, unknown>> = {
@@ -131,6 +142,7 @@ export type Database = {
       workout_categories: T<WorkoutCategory>;
       workouts: T<Workout>;
       workout_progress: T<WorkoutProgress>;
+      announcements: T<Announcement>;
     };
     Views: Record<never, never>;
     Functions: {

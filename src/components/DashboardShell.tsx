@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router';
 import { Menu, X, LogOut, type LucideIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import Avatar from '@/components/Avatar';
 
 export interface NavItem {
   to: string;
@@ -110,9 +111,12 @@ export default function DashboardShell({
       {/* Conteúdo */}
       <div className="md:pl-64">
         <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-10">
-          <div className="mb-6 hidden md:block">
-            <p className="text-sm text-[var(--color-medium-grey)]">Olá,</p>
-            <p className="text-lg font-semibold text-[var(--color-black)]">{firstName} 👋</p>
+          <div className="mb-6 hidden items-center gap-3 md:flex">
+            <Avatar url={profile?.avatar_url} name={firstName} size={44} />
+            <div>
+              <p className="text-sm text-[var(--color-medium-grey)]">Olá,</p>
+              <p className="text-lg font-semibold text-[var(--color-black)]">{firstName} 👋</p>
+            </div>
           </div>
           {children}
         </div>

@@ -25,6 +25,7 @@ import AdminWorkouts from '@/pages/admin/AdminWorkouts';
 import AdminCategories from '@/pages/admin/AdminCategories';
 import AdminPlans from '@/pages/admin/AdminPlans';
 import AdminStudents from '@/pages/admin/AdminStudents';
+import AdminAnnouncements from '@/pages/admin/AdminAnnouncements';
 
 function App() {
   return (
@@ -79,6 +80,7 @@ function App() {
             <Route path="categorias" element={<AdminCategories />} />
             <Route path="planos" element={<AdminPlans />} />
             <Route path="alunas" element={<AdminStudents />} />
+            <Route path="avisos" element={<AdminAnnouncements />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

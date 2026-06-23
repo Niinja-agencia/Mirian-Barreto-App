@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
+import Avatar from '@/components/Avatar';
 import { supabase } from '@/lib/supabase';
 import { formatDate, subscriptionStatusLabel, LEVEL_LABELS } from '@/lib/format';
 import type { Profile, Subscription, Plan } from '@/lib/database.types';
@@ -74,10 +75,15 @@ export default function AdminStudents() {
               return (
                 <tr key={r.id} className="border-b border-[var(--color-divider-dark)] last:border-0">
                   <td className="px-4 py-3">
-                    <p className="text-[var(--color-black)]">{r.full_name ?? '—'}</p>
-                    {r.role === 'admin' && (
-                      <span className="text-xs font-medium text-[var(--color-rose)]">admin</span>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <Avatar url={r.avatar_url} name={r.full_name} size={36} />
+                      <div>
+                        <p className="text-[var(--color-black)]">{r.full_name ?? '—'}</p>
+                        {r.role === 'admin' && (
+                          <span className="text-xs font-medium text-[var(--color-rose)]">admin</span>
+                        )}
+                      </div>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-[var(--color-medium-grey)]">{LEVEL_LABELS[r.level]}</td>
                   <td className="px-4 py-3 text-[var(--color-medium-grey)]">{sub?.plan?.name_pt ?? '—'}</td>
