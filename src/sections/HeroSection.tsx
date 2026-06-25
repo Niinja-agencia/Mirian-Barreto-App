@@ -116,8 +116,8 @@ export default function HeroSection() {
                 fontSize: 'clamp(2.5rem, 8vw, 7rem)',
               }}
             >
-              <span className="tr" data-pt="Treine com quem entende de resultado" data-en="Train with who understands results">
-                Treine com quem entende de resultado
+              <span className="tr" data-pt="Treinos para mulheres reais" data-en="Workouts for real women">
+                Treinos para mulheres reais
               </span>
             </h1>
           </div>
@@ -133,10 +133,10 @@ export default function HeroSection() {
             >
               <span
                 className="tr"
-                data-pt="Videoaulas exclusivas, treinos personalizados e acompanhamento profissional. Tudo no seu celular, em qualquer lugar."
-                data-en="Exclusive video classes, personalized workouts and professional coaching. All on your phone, anywhere."
+                data-pt="Emagreça, defina e fortaleça seu corpo com treinos práticos que cabem na sua rotina."
+                data-en="Lose weight, tone and strengthen your body with practical workouts that fit your routine."
               >
-                Videoaulas exclusivas, treinos personalizados e acompanhamento profissional. Tudo no seu celular, em qualquer lugar.
+                Emagreça, defina e fortaleça seu corpo com treinos práticos que cabem na sua rotina.
               </span>
             </p>
           </div>

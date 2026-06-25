@@ -61,7 +61,7 @@ export default function AboutSection() {
             </span>
 
             <h2
-              className="mt-4 text-white font-bold leading-[0.95] tracking-[-0.02em]"
+              className="mt-4 text-white font-bold leading-[0.95] tracking-[-0.02em] uppercase"
               style={{
                 fontFamily: 'var(--font-display)',
                 fontSize: 'clamp(2rem, 5vw, 3.75rem)',
@@ -69,10 +69,10 @@ export default function AboutSection() {
             >
               <span
                 className="tr"
-                data-pt="Mais de uma década transformando o corpo e a confiança de mulheres."
-                data-en="Over a decade transforming women's bodies and confidence."
+                data-pt="Volte a se sentir bem no seu corpo"
+                data-en="Feel good in your body again"
               >
-                Mais de uma década transformando o corpo e a confiança de mulheres.
+                Volte a se sentir bem no seu corpo
               </span>
             </h2>
 
@@ -83,13 +83,12 @@ export default function AboutSection() {
               >
                 <span
                   className="tr"
-                  data-pt="Personal trainer formada em Educação Física, especialista em treinamento feminino e emagrecimento. Mirian construiu um método que une ciência, prática e o entendimento real do corpo da mulher em cada fase da vida."
-                  data-en="Personal trainer with a degree in Physical Education, specialist in women's training and weight loss. Mirian built a method that blends science, practice and a real understanding of the female body at every stage of life."
+                  data-pt="Sou Mirian Barreto, profissional de Educação Física e apaixonada por ajudar mulheres a conquistarem um corpo forte, saudável e confiante."
+                  data-en="I'm Mirian Barreto, a Physical Education professional passionate about helping women build a strong, healthy and confident body."
                 >
-                  Personal trainer formada em Educação Física, especialista em
-                  treinamento feminino e emagrecimento. Mirian construiu um método
-                  que une ciência, prática e o entendimento real do corpo da mulher
-                  em cada fase da vida.
+                  Sou Mirian Barreto, profissional de Educação Física e apaixonada
+                  por ajudar mulheres a conquistarem um corpo forte, saudável e
+                  confiante.
                 </span>
               </p>
 
@@ -99,13 +98,11 @@ export default function AboutSection() {
               >
                 <span
                   className="tr"
-                  data-pt="No app, ela traz tudo o que aprendeu atendendo presencialmente milhares de alunas: treinos eficientes, instrução clara e acompanhamento próximo — sem promessa milagrosa, com resultado real."
-                  data-en="In the app, she brings everything she's learned coaching thousands of students in person: efficient workouts, clear instruction and close coaching — no miracle promises, only real results."
+                  data-pt="Treinos guiados para mulheres que querem emagrecer, definir e recuperar a confiança, sem precisar viver dentro da academia."
+                  data-en="Guided workouts for women who want to lose weight, tone up and regain confidence — without living inside the gym."
                 >
-                  No app, ela traz tudo o que aprendeu atendendo presencialmente
-                  milhares de alunas: treinos eficientes, instrução clara e
-                  acompanhamento próximo — sem promessa milagrosa, com resultado
-                  real.
+                  Treinos guiados para mulheres que querem emagrecer, definir e
+                  recuperar a confiança, sem precisar viver dentro da academia.
                 </span>
               </p>
             </div>
