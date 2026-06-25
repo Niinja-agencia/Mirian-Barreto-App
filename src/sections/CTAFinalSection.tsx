@@ -72,13 +72,13 @@ export default function CTAFinalSection() {
         {/* Contact Info */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 mt-12">
           <a
-            href="https://wa.me/553191809387"
+            href="https://wa.me/553141122199"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-[var(--color-medium-grey)] hover:text-white transition-colors duration-300"
           >
             <Phone size={20} strokeWidth={1.5} />
-            <span className="text-sm">31 9180-9387</span>
+            <span className="text-sm">31 4112-2199</span>
           </a>
           <a
             href="https://instagram.com/mirianbarretombb"
@@ -97,7 +97,7 @@ export default function CTAFinalSection() {
             Ainda tem dúvidas?
           </span>{' '}
           <a
-            href="https://wa.me/553191809387"
+            href="https://wa.me/553141122199"
             target="_blank"
             rel="noopener noreferrer"
             className="text-[var(--color-rose)] hover:text-[var(--color-rose-hover)] transition-colors duration-300 underline underline-offset-2"
