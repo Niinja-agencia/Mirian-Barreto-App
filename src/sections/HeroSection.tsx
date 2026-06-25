@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { Link } from 'react-router';
 import { useHeroParallax } from '@/hooks/useParallax';
 import gsap from 'gsap';
 import { ChevronDown } from 'lucide-react';
@@ -163,16 +164,15 @@ export default function HeroSection() {
                 Ver Planos
               </span>
             </button>
-            {/* TODO: trocar href para a URL real de login do app */}
-            <a
-              href="#login"
+            <Link
+              to="/login"
               className="border border-white text-white uppercase tracking-[0.08em] text-sm font-medium px-8 py-4 hover:bg-[rgba(255,255,255,0.1)] transition-all duration-300 text-center"
               aria-label="Acesso para alunas existentes"
             >
               <span className="tr" data-pt="Já sou aluna" data-en="I'm already a student">
                 Já sou aluna
               </span>
-            </a>
+            </Link>
           </div>
         </div>
 
