@@ -9,6 +9,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { formatDuration, LEVEL_LABELS } from '@/lib/format';
 import type { Workout } from '@/lib/database.types';
 import ProtectedVideo from '@/components/ProtectedVideo';
+import YouTubeEmbed from '@/components/YouTubeEmbed';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
 export default function WorkoutDetail() {
@@ -103,6 +104,8 @@ export default function WorkoutDetail() {
             Fazer upgrade
           </Link>
         </div>
+      ) : workout.youtube_id ? (
+        <YouTubeEmbed id={workout.youtube_id} />
       ) : (
         <ProtectedVideo workoutId={workout.id} />
       )}

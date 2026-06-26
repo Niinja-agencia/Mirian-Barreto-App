@@ -97,6 +97,7 @@ export type Workout = {
   level: FitnessLevel;
   duration_seconds: number;
   video_path: string | null;
+  youtube_id: string | null;
   thumbnail_path: string | null;
   required_tier: number;
   published: boolean;

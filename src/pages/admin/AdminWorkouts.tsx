@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { TextInput, SubmitButton } from '@/components/form';
 import Modal from '@/components/Modal';
 import { formatDuration, LEVEL_LABELS } from '@/lib/format';
+import { youtubeId } from '@/components/YouTubeEmbed';
 import type { Workout, WorkoutCategory, FitnessLevel } from '@/lib/database.types';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
@@ -21,6 +22,7 @@ interface FormState {
   published: boolean;
   video_path: string | null;
   thumbnail_path: string | null;
+  youtube_id: string;
 }
 
 const empty: FormState = {
@@ -36,6 +38,7 @@ const empty: FormState = {
   published: false,
   video_path: null,
   thumbnail_path: null,
+  youtube_id: '',
 };
 
 async function uploadTo(bucket: string, file: File): Promise<string> {
@@ -86,6 +89,7 @@ export default function AdminWorkouts() {
       published: w.published,
       video_path: w.video_path,
       thumbnail_path: w.thumbnail_path,
+      youtube_id: w.youtube_id ?? '',
     });
     setOpen(true);
   }
@@ -122,6 +126,7 @@ export default function AdminWorkouts() {
       published: form.published,
       video_path: form.video_path,
       thumbnail_path: form.thumbnail_path,
+      youtube_id: youtubeId(form.youtube_id),
     };
     const { error } = form.id
       ? await supabase.from('workouts').update(payload).eq('id', form.id)
@@ -274,6 +279,17 @@ export default function AdminWorkouts() {
               </select>
             </label>
           </div>
+
+          {/* Vídeo do YouTube */}
+          <TextInput
+            label="Vídeo do YouTube (link ou ID) — opcional"
+            value={form.youtube_id}
+            onChange={(e) => setForm({ ...form, youtube_id: e.target.value })}
+            placeholder="https://youtu.be/XXXXXXXXXXX"
+          />
+          <p className="-mt-2 text-xs text-[var(--color-medium-grey)]">
+            Se preenchido, o treino usa o vídeo do YouTube. Senão, usa o arquivo enviado abaixo.
+          </p>
 
           {/* Uploads */}
           <div className="grid grid-cols-1 gap-3">
