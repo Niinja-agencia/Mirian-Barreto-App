@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Vídeos-fonte (pesados, não versionar)
+Videos/
+*.mp4
+*.HEIC

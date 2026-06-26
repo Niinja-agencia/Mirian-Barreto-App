@@ -40,7 +40,7 @@ export default function ProtectedVideo({ workoutId }: { workoutId: string }) {
 
   if (error) {
     return (
-      <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-2xl bg-[var(--color-black)] text-center text-white">
+      <div className="flex mx-auto aspect-[9/16] w-full max-w-[420px] flex-col items-center justify-center gap-3 rounded-2xl bg-[var(--color-black)] text-center text-white">
         <AlertCircle className="text-[var(--color-rose)]" size={32} />
         <p className="max-w-sm text-sm text-[rgba(255,255,255,0.8)]">{error}</p>
       </div>
@@ -49,14 +49,14 @@ export default function ProtectedVideo({ workoutId }: { workoutId: string }) {
 
   if (!url) {
     return (
-      <div className="flex aspect-video w-full items-center justify-center rounded-2xl bg-[var(--color-black)]">
+      <div className="flex mx-auto aspect-[9/16] w-full max-w-[420px] items-center justify-center rounded-2xl bg-[var(--color-black)]">
         <Loader2 className="animate-spin text-[var(--color-rose)]" size={32} />
       </div>
     );
   }
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black">
+    <div className="relative mx-auto aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl bg-black">
       <video
         ref={videoRef}
         src={url}
@@ -64,7 +64,7 @@ export default function ProtectedVideo({ workoutId }: { workoutId: string }) {
         controlsList="nodownload noplaybackrate"
         disablePictureInPicture
         onContextMenu={(e) => e.preventDefault()}
-        className="h-full w-full"
+        className="h-full w-full object-contain"
       />
       {/* Marca d'água discreta */}
       <div className="pointer-events-none absolute bottom-3 right-3 rounded bg-black/40 px-2 py-1 text-[10px] tracking-wide text-white/70">
