@@ -72,9 +72,11 @@ export default function InstallPrompt() {
           <X size={18} />
         </button>
         <div className="flex items-center gap-3 pr-6">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-rose)] font-bold">
-            MB
-          </div>
+          <img
+            src="/apple-touch-icon.png"
+            alt="Mirian Barreto"
+            className="h-11 w-11 shrink-0 rounded-xl bg-white object-contain p-1"
+          />
           <div className="flex-1">
             <p className="text-sm font-semibold">Instale o app da Mirian</p>
             <p className="text-xs text-white/70">Acesse seus treinos direto da tela inicial.</p>
