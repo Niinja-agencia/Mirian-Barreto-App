@@ -1,22 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, PictureInPicture2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+import { useWakeLock } from '@/hooks/useWakeLock';
 
 /**
  * Player protegido:
- * - busca uma URL assinada de curta duração via Edge Function 'video-url'
- *   (que valida assinatura ativa no servidor);
- * - desabilita download e menu de contexto;
- * - sobrepõe marca d'água com o e-mail da aluna (inibe revenda).
- * Observação: nenhuma proteção client-side impede gravação de tela —
- * para isso seria necessário migrar para HLS+DRM (ex.: Bunny/Cloudflare Stream).
+ * - URL assinada de curta duração via Edge Function 'video-url' (valida plano);
+ * - sem download / menu de contexto; marca d'água com o e-mail da aluna;
+ * - Wake Lock: a tela não apaga durante o treino;
+ * - Media Session: controles na tela de bloqueio + áudio em background (Android);
+ * - Picture-in-Picture.
+ * Obs.: proteção client-side não impede gravação de tela (p/ DRM real, usar Bunny/Cloudflare).
  */
-export default function ProtectedVideo({ workoutId }: { workoutId: string }) {
+export default function ProtectedVideo({
+  workoutId,
+  title,
+  artwork,
+}: {
+  workoutId: string;
+  title?: string;
+  artwork?: string | null;
+}) {
   const { user } = useAuth();
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { acquire, release } = useWakeLock();
 
   useEffect(() => {
     let active = true;
@@ -38,9 +48,64 @@ export default function ProtectedVideo({ workoutId }: { workoutId: string }) {
     };
   }, [workoutId]);
 
+  // Media Session (controles na lock screen) + Wake Lock
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !url) return;
+
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: title || 'Treino',
+        artist: 'Mirian Barreto',
+        album: 'App de Treinos',
+        artwork: artwork ? [{ src: artwork, sizes: '512x512', type: 'image/png' }] : [],
+      });
+      const set = (a: MediaSessionAction, h: () => void) => {
+        try {
+          navigator.mediaSession.setActionHandler(a, h);
+        } catch {
+          /* ação não suportada */
+        }
+      };
+      set('play', () => v.play());
+      set('pause', () => v.pause());
+      set('seekbackward', () => (v.currentTime = Math.max(0, v.currentTime - 10)));
+      set('seekforward', () => (v.currentTime = Math.min(v.duration || 0, v.currentTime + 10)));
+    }
+
+    const onPlay = () => {
+      acquire();
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+    };
+    const onPause = () => {
+      release();
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+    };
+    v.addEventListener('play', onPlay);
+    v.addEventListener('pause', onPause);
+    v.addEventListener('ended', release);
+    return () => {
+      v.removeEventListener('play', onPlay);
+      v.removeEventListener('pause', onPause);
+      v.removeEventListener('ended', release);
+      release();
+    };
+  }, [url, title, artwork, acquire, release]);
+
+  async function togglePip() {
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      if (document.pictureInPictureElement) await document.exitPictureInPicture();
+      else await v.requestPictureInPicture();
+    } catch {
+      /* PiP indisponível neste navegador */
+    }
+  }
+
   if (error) {
     return (
-      <div className="flex mx-auto aspect-[9/16] w-full max-w-[420px] flex-col items-center justify-center gap-3 rounded-2xl bg-[var(--color-black)] text-center text-white">
+      <div className="mx-auto flex aspect-[9/16] w-full max-w-[420px] flex-col items-center justify-center gap-3 rounded-2xl bg-[var(--color-black)] text-center text-white">
         <AlertCircle className="text-[var(--color-rose)]" size={32} />
         <p className="max-w-sm text-sm text-[rgba(255,255,255,0.8)]">{error}</p>
       </div>
@@ -49,7 +114,7 @@ export default function ProtectedVideo({ workoutId }: { workoutId: string }) {
 
   if (!url) {
     return (
-      <div className="flex mx-auto aspect-[9/16] w-full max-w-[420px] items-center justify-center rounded-2xl bg-[var(--color-black)]">
+      <div className="mx-auto flex aspect-[9/16] w-full max-w-[420px] items-center justify-center rounded-2xl bg-[var(--color-black)]">
         <Loader2 className="animate-spin text-[var(--color-rose)]" size={32} />
       </div>
     );
@@ -61,11 +126,21 @@ export default function ProtectedVideo({ workoutId }: { workoutId: string }) {
         ref={videoRef}
         src={url}
         controls
+        playsInline
         controlsList="nodownload noplaybackrate"
-        disablePictureInPicture
         onContextMenu={(e) => e.preventDefault()}
         className="h-full w-full object-contain"
       />
+      {/* Botão Picture-in-Picture */}
+      {typeof document !== 'undefined' && document.pictureInPictureEnabled && (
+        <button
+          onClick={togglePip}
+          aria-label="Picture-in-Picture"
+          className="absolute right-2 top-2 rounded-lg bg-black/50 p-2 text-white/90 hover:bg-black/70"
+        >
+          <PictureInPicture2 size={18} />
+        </button>
+      )}
       {/* Marca d'água discreta */}
       <div className="pointer-events-none absolute bottom-3 right-3 rounded bg-black/40 px-2 py-1 text-[10px] tracking-wide text-white/70">
         {user?.email}

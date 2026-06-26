@@ -10,6 +10,7 @@ import { formatDuration, LEVEL_LABELS } from '@/lib/format';
 import type { Workout } from '@/lib/database.types';
 import ProtectedVideo from '@/components/ProtectedVideo';
 import YouTubeEmbed from '@/components/YouTubeEmbed';
+import { thumbUrl } from '@/lib/storage';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
 export default function WorkoutDetail() {
@@ -107,7 +108,7 @@ export default function WorkoutDetail() {
       ) : workout.youtube_id ? (
         <YouTubeEmbed id={workout.youtube_id} />
       ) : (
-        <ProtectedVideo workoutId={workout.id} />
+        <ProtectedVideo workoutId={workout.id} title={title} artwork={thumbUrl(workout.thumbnail_path)} />
       )}
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
