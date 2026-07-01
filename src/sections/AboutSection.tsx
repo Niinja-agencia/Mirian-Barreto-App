@@ -55,8 +55,8 @@ export default function AboutSection() {
               className="uppercase tracking-[0.12em] text-sm font-medium"
               style={{ color: 'var(--color-rose)' }}
             >
-              <span className="tr" data-pt="QUEM É MIRIAN" data-en="WHO IS MIRIAN">
-                QUEM É MIRIAN
+              <span className="tr" data-pt="QUEM É MIRIAN BARRETO?" data-en="WHO IS MIRIAN BARRETO?">
+                QUEM É MIRIAN BARRETO?
               </span>
             </span>
 
@@ -83,11 +83,11 @@ export default function AboutSection() {
               >
                 <span
                   className="tr"
-                  data-pt="Sou Mirian Barreto, profissional de Educação Física e apaixonada por ajudar mulheres a conquistarem um corpo forte, saudável e confiante."
-                  data-en="I'm Mirian Barreto, a Physical Education professional passionate about helping women build a strong, healthy and confident body."
+                  data-pt="Sou profissional de Educação Física, empresária e apaixonada por ajudar mulheres a conquistarem um corpo mais forte, saudável e confiante."
+                  data-en="I'm a Physical Education professional, entrepreneur and passionate about helping women achieve a stronger, healthier and more confident body."
                 >
-                  Sou Mirian Barreto, profissional de Educação Física e apaixonada
-                  por ajudar mulheres a conquistarem um corpo forte, saudável e
+                  Sou profissional de Educação Física, empresária e apaixonada por
+                  ajudar mulheres a conquistarem um corpo mais forte, saudável e
                   confiante.
                 </span>
               </p>
@@ -98,11 +98,28 @@ export default function AboutSection() {
               >
                 <span
                   className="tr"
-                  data-pt="Treinos guiados para mulheres que querem emagrecer, definir e recuperar a confiança, sem precisar viver dentro da academia."
-                  data-en="Guided workouts for women who want to lose weight, tone up and regain confidence — without living inside the gym."
+                  data-pt="Ao longo dos anos, percebi que muitas mulheres treinam sem orientação, sem atenção e sem saber se estão fazendo o certo. Sentem-se perdidas, desmotivadas e, muitas vezes, invisíveis dentro da academia."
+                  data-en="Over the years, I realized many women train without guidance, without attention and without knowing if they're doing it right. They feel lost, unmotivated and, often, invisible at the gym."
                 >
-                  Treinos guiados para mulheres que querem emagrecer, definir e
-                  recuperar a confiança, sem precisar viver dentro da academia.
+                  Ao longo dos anos, percebi que muitas mulheres treinam sem
+                  orientação, sem atenção e sem saber se estão fazendo o certo.
+                  Sentem-se perdidas, desmotivadas e, muitas vezes, invisíveis
+                  dentro da academia.
+                </span>
+              </p>
+
+              <p
+                className="text-[rgba(255,255,255,0.7)] font-light leading-relaxed"
+                style={{ fontSize: 'clamp(1.0625rem, 1.5vw, 1.2rem)' }}
+              >
+                <span
+                  className="tr"
+                  data-pt="Por isso criei um método simples e eficiente para que você tenha direção, segurança e resultados reais, treinando em qualquer lugar."
+                  data-en="That's why I created a simple and efficient method so you have direction, safety and real results, training anywhere."
+                >
+                  Por isso criei um método simples e eficiente para que você tenha
+                  direção, segurança e resultados reais, treinando em qualquer
+                  lugar.
                 </span>
               </p>
             </div>

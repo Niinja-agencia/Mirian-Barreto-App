@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useLanguage } from '@/context/LanguageContext';
-import { Check, Shield, RotateCcw, XCircle } from 'lucide-react';
+import { Check, Shield, XCircle } from 'lucide-react';
 
 const plans = [
   {
@@ -266,12 +266,6 @@ export default function PricingSection() {
             <Shield size={20} strokeWidth={1.5} />
             <span className="uppercase tracking-[0.08em] text-xs font-medium">
               <span className="tr" data-pt="Pagamento Seguro" data-en="Secure Payment">Pagamento Seguro</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-[var(--color-medium-grey)]">
-            <RotateCcw size={20} strokeWidth={1.5} />
-            <span className="uppercase tracking-[0.08em] text-xs font-medium">
-              <span className="tr" data-pt="7 Dias de Garantia" data-en="7-Day Guarantee">7 Dias de Garantia</span>
             </span>
           </div>
           <div className="flex items-center gap-2 text-[var(--color-medium-grey)]">

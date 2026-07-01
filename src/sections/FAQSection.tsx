@@ -25,14 +25,8 @@ const faqItems = [
   {
     questionPt: 'E se eu for iniciante?',
     questionEn: "What if I'm a beginner?",
-    answerPt: 'O app tem programas específicos para iniciantes, com exercícios progressivos que evoluem conforme você ganha condicionamento. A Mirian acompanha sua evolução e ajusta quando necessário.',
-    answerEn: 'The app has specific programs for beginners, with progressive exercises that evolve as you gain conditioning. Mirian tracks your progress and adjusts when needed.',
-  },
-  {
-    questionPt: 'Como funciona a garantia de 7 dias?',
-    questionEn: 'How does the 7-day guarantee work?',
-    answerPt: 'Você tem 7 dias para testar o app. Se não gostar, devolvemos 100% do valor pago. Sem perguntas, sem letras miúdas.',
-    answerEn: "You have 7 days to try the app. If you don't like it, we refund 100% of what you paid. No questions, no fine print.",
+    answerPt: 'O app tem programas específicos para iniciantes, com exercícios progressivos que evoluem conforme você ganha condicionamento.',
+    answerEn: 'The app has specific programs for beginners, with progressive exercises that evolve as you gain conditioning.',
   },
   {
     questionPt: 'O app funciona offline?',
