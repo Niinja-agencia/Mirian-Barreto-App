@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { brl } from '@/lib/format';
-import type { Plan, BillingInterval, PaymentMethod } from '@/lib/database.types';
+import type { Plan, PaymentMethod } from '@/lib/database.types';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
 interface PixResult {
@@ -22,7 +22,6 @@ export default function Checkout() {
 
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
-  const [billing, setBilling] = useState<BillingInterval>('monthly');
   const [method, setMethod] = useState<PaymentMethod>('credit_card');
   const [submitting, setSubmitting] = useState(false);
   const [pix, setPix] = useState<PixResult | null>(null);
@@ -48,16 +47,17 @@ export default function Checkout() {
     );
   }
 
-  const price = billing === 'monthly' ? plan.price_monthly : plan.price_annual;
-  // Pix não suporta assinatura recorrente automática → forçamos cobrança avulsa.
-  const isRecurring = method === 'credit_card';
+  const isAvulso = plan.slug === 'avulso';
+  const price = Number(plan.price_monthly);
+  // Avulso é compra única; nos demais, cartão é recorrente e Pix é avulso.
+  const isRecurring = method === 'credit_card' && !isAvulso;
 
   async function submit() {
     if (!user) return;
     setSubmitting(true);
     setPix(null);
     const { data, error } = await supabase.functions.invoke('create-checkout', {
-      body: { plan_slug: plan!.slug, billing, method },
+      body: { plan_slug: plan!.slug, billing: 'monthly', method },
     });
     setSubmitting(false);
 
@@ -107,7 +107,7 @@ export default function Checkout() {
             <p className="mt-4 text-3xl font-bold">
               {brl(price)}
               <span className="text-sm font-normal text-[rgba(255,255,255,0.6)]">
-                {billing === 'monthly' ? '/mês' : '/ano'}
+                {isAvulso ? ' único' : '/mês'}
               </span>
             </p>
             <ul className="mt-6 space-y-2">
@@ -152,23 +152,6 @@ export default function Checkout() {
               <>
                 <h2 className="mb-5 font-semibold text-[var(--color-black)]">Pagamento</h2>
 
-                {/* Ciclo */}
-                <p className="mb-2 text-sm font-medium text-[var(--color-black)]">Ciclo</p>
-                <div className="mb-5 grid grid-cols-2 gap-3">
-                  <ToggleCard
-                    active={billing === 'monthly'}
-                    onClick={() => setBilling('monthly')}
-                    title="Mensal"
-                    subtitle={brl(plan.price_monthly)}
-                  />
-                  <ToggleCard
-                    active={billing === 'annual'}
-                    onClick={() => setBilling('annual')}
-                    title="Anual"
-                    subtitle={`${brl(plan.price_annual)} · -20%`}
-                  />
-                </div>
-
                 {/* Método */}
                 <p className="mb-2 text-sm font-medium text-[var(--color-black)]">Forma de pagamento</p>
                 <div className="mb-2 grid grid-cols-2 gap-3">
@@ -176,7 +159,7 @@ export default function Checkout() {
                     active={method === 'credit_card'}
                     onClick={() => setMethod('credit_card')}
                     title="Cartão"
-                    subtitle="Recorrente"
+                    subtitle={isAvulso ? 'À vista' : 'Recorrente'}
                     icon={<CreditCard size={18} />}
                   />
                   <ToggleCard
@@ -187,11 +170,17 @@ export default function Checkout() {
                     icon={<QrCode size={18} />}
                   />
                 </div>
-                {!isRecurring && (
+                {isAvulso ? (
                   <p className="mb-4 text-xs text-[var(--color-medium-grey)]">
-                    No Pix a cobrança é avulsa (não renova automaticamente). Você receberá um lembrete
-                    antes do fim do período.
+                    Compra única — sem assinatura. Você garante o acesso a este treino.
                   </p>
+                ) : (
+                  !isRecurring && (
+                    <p className="mb-4 text-xs text-[var(--color-medium-grey)]">
+                      No Pix a cobrança é avulsa (não renova automaticamente). Você receberá um lembrete
+                      antes do fim do período.
+                    </p>
+                  )
                 )}
 
                 <button

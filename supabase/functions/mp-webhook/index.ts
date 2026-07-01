@@ -92,17 +92,19 @@ Deno.serve(async (req) => {
         .select('user_id, plan_id')
         .maybeSingle();
 
-      // Pix aprovado → cria/renova um período de assinatura (avulso)
+      // Pagamento único aprovado → cria acesso.
+      // 'once' (Avulso) = acesso permanente (sem expiração); senão período mensal.
       if (status === 'approved' && payRow?.plan_id && payRow.user_id) {
         const billing = (pay.metadata?.billing as string) ?? 'monthly';
+        const oneTime = billing === 'once';
         const months = billing === 'annual' ? 12 : 1;
-        const periodEnd = addMonths(new Date(), months).toISOString();
+        const periodEnd = oneTime ? null : addMonths(new Date(), months).toISOString();
 
         await admin.from('subscriptions').insert({
           user_id: payRow.user_id,
           plan_id: payRow.plan_id,
           status: 'active',
-          billing,
+          billing: oneTime ? 'monthly' : (billing as 'monthly' | 'annual'),
           current_period_start: new Date().toISOString(),
           current_period_end: periodEnd,
         });
