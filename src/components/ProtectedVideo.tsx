@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useWakeLock } from '@/hooks/useWakeLock';
 
+const VIDEO_HOST = import.meta.env.VITE_VIDEO_HOST as string;
+
 /**
  * Player protegido:
  * - URL assinada de curta duração via Edge Function 'video-url' (valida plano);
@@ -33,15 +35,34 @@ export default function ProtectedVideo({
     setUrl(null);
     setError(null);
     (async () => {
-      const { data, error } = await supabase.functions.invoke('video-url', {
-        body: { workout_id: workoutId },
-      });
-      if (!active) return;
-      if (error || !data?.url) {
-        setError('Não foi possível carregar o vídeo. Verifique se seu plano está ativo.');
+      // O vídeo é servido pela VPS: pedimos uma URL assinada de curta duração.
+      // O servidor valida o plano ativo antes de assinar.
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) {
+        if (active) setError('Sessão expirada. Entre novamente.');
         return;
       }
-      setUrl(data.url as string);
+      try {
+        const res = await fetch(`${VIDEO_HOST}/sign`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workout_id: workoutId }),
+        });
+        if (!active) return;
+        if (!res.ok) {
+          setError(
+            res.status === 403
+              ? 'Este treino não está incluído no seu plano.'
+              : 'Não foi possível carregar o vídeo. Verifique se seu plano está ativo.'
+          );
+          return;
+        }
+        const data = await res.json();
+        setUrl(data.url as string);
+      } catch {
+        if (active) setError('Não foi possível carregar o vídeo. Tente novamente.');
+      }
     })();
     return () => {
       active = false;

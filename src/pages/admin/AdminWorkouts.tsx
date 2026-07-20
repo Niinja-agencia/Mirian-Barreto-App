@@ -6,6 +6,7 @@ import { TextInput, SubmitButton } from '@/components/form';
 import Modal from '@/components/Modal';
 import { formatDuration, LEVEL_LABELS } from '@/lib/format';
 import { youtubeId } from '@/components/YouTubeEmbed';
+import { uploadWorkoutVideo, waitForConversion } from '@/lib/videoHost';
 import type { Workout, WorkoutCategory, FitnessLevel } from '@/lib/database.types';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
@@ -57,6 +58,9 @@ export default function AdminWorkouts() {
   const [form, setForm] = useState<FormState>({ ...empty });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [phase, setPhase] = useState<'idle' | 'uploading' | 'converting'>('idle');
+  const [uploadPct, setUploadPct] = useState(0);
 
   async function load() {
     const [{ data: w }, { data: c }] = await Promise.all([
@@ -114,7 +118,7 @@ export default function AdminWorkouts() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const payload = {
+    const payload: Record<string, unknown> = {
       title_pt: form.title_pt.trim(),
       title_en: form.title_en.trim(),
       description_pt: form.description_pt.trim() || null,
@@ -128,11 +132,41 @@ export default function AdminWorkouts() {
       thumbnail_path: form.thumbnail_path,
       youtube_id: youtubeId(form.youtube_id),
     };
-    const { error } = form.id
-      ? await supabase.from('workouts').update(payload).eq('id', form.id)
-      : await supabase.from('workouts').insert(payload);
+    // 1. salva o treino (e obtém o id, necessário para enviar o vídeo)
+    const { data: saved, error } = form.id
+      ? await supabase.from('workouts').update(payload).eq('id', form.id).select('id').single()
+      : await supabase.from('workouts').insert(payload).select('id').single();
+
+    if (error || !saved) {
+      setSaving(false);
+      return toast.error(error?.message ?? 'Erro ao salvar.');
+    }
+
+    // 2. se escolheu um vídeo, envia para a VPS (que converte automaticamente)
+    if (videoFile) {
+      try {
+        const { data: sess } = await supabase.auth.getSession();
+        const token = sess.session?.access_token;
+        if (!token) throw new Error('Sessão expirada.');
+
+        setPhase('uploading');
+        setUploadPct(0);
+        const jobId = await uploadWorkoutVideo(videoFile, saved.id as string, token, setUploadPct);
+
+        setPhase('converting');
+        toast.info('Vídeo enviado. Convertendo — pode levar alguns minutos.');
+        await waitForConversion(jobId, token);
+        toast.success('Vídeo convertido e publicado!');
+      } catch (err) {
+        setPhase('idle');
+        setSaving(false);
+        return toast.error((err as Error).message);
+      }
+    }
+
+    setPhase('idle');
+    setVideoFile(null);
     setSaving(false);
-    if (error) return toast.error(error.message);
     toast.success('Treino salvo!');
     setOpen(false);
     load();
@@ -295,9 +329,40 @@ export default function AdminWorkouts() {
           <div className="grid grid-cols-1 gap-3">
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">
-                Vídeo {form.video_path && <span className="text-green-600">✓ enviado</span>}
+                Vídeo {form.video_path && !videoFile && <span className="text-green-600">✓ publicado</span>}
               </span>
-              <input type="file" accept="video/*" onChange={(e) => handleFile('workout-videos', e.target.files?.[0] ?? null)} className="text-sm" />
+              <input
+                type="file"
+                accept="video/*"
+                onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
+                className="text-sm"
+              />
+              <span className="mt-1 block text-xs text-[var(--color-medium-grey)]">
+                O vídeo é convertido automaticamente no servidor (720p vertical, otimizado). Pode
+                enviar o arquivo original, sem limite de tamanho.
+              </span>
+              {videoFile && phase === 'idle' && (
+                <span className="mt-1 block text-xs text-[var(--color-black)]">
+                  Selecionado: {videoFile.name} ({(videoFile.size / 1048576).toFixed(0)} MB)
+                </span>
+              )}
+              {phase === 'uploading' && (
+                <span className="mt-2 block">
+                  <span className="text-xs text-[var(--color-black)]">Enviando… {uploadPct}%</span>
+                  <span className="mt-1 block h-2 w-full overflow-hidden rounded-full bg-[var(--color-warm-grey)]">
+                    <span
+                      className="block h-full bg-[var(--color-rose)] transition-all"
+                      style={{ width: `${uploadPct}%` }}
+                    />
+                  </span>
+                </span>
+              )}
+              {phase === 'converting' && (
+                <span className="mt-2 flex items-center gap-2 text-xs text-[var(--color-black)]">
+                  <Loader2 className="animate-spin" size={14} /> Convertendo no servidor… pode levar
+                  alguns minutos. Não feche esta janela.
+                </span>
+              )}
             </label>
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">
