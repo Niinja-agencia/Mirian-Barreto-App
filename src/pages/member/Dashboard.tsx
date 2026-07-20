@@ -152,7 +152,7 @@ export default function Dashboard() {
                       </div>
                     )}
                     {locked && (
-                      <span className="absolute right-2 top-2 rounded bg-[var(--color-black)]/80 px-2 py-1 text-xs font-medium text-white">
+                      <span className="absolute right-2 top-2 rounded bg-black/80 px-2 py-1 text-xs font-medium text-white">
                         <Lock size={11} className="inline" />
                       </span>
                     )}

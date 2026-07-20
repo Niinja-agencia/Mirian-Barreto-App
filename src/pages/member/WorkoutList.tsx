@@ -113,7 +113,7 @@ export default function WorkoutList() {
                     )}
                   </div>
                   {locked && (
-                    <span className="absolute right-2 top-2 flex items-center gap-1 rounded bg-[var(--color-black)]/80 px-2 py-1 text-xs font-medium text-white">
+                    <span className="absolute right-2 top-2 flex items-center gap-1 rounded bg-black/80 px-2 py-1 text-xs font-medium text-white">
                       <Lock size={12} /> Bloqueado
                     </span>
                   )}

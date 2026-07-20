@@ -17,7 +17,11 @@ export default function UploadOverlay({
   const pct = progress?.pct ?? 0;
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[var(--color-black)]/95 p-6">
+    // fundo opaco via style: Tailwind não aplica opacidade sobre var() arbitrária
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center p-6"
+      style={{ backgroundColor: 'rgba(10, 10, 10, 0.97)' }}
+    >
       <div className="w-full max-w-xl text-center text-white">
         {phase === 'uploading' ? (
           <>
