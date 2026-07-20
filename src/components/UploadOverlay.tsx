@@ -11,11 +11,14 @@ export default function UploadOverlay({
   phase,
   progress,
   onDismiss,
+  queuePosition,
 }: {
   phase: 'uploading' | 'converting';
   progress: UploadProgress | null;
   /** Disponível só na conversão: fecha a tela e deixa o servidor terminar sozinho. */
   onDismiss?: () => void;
+  /** Se houver outra conversão rodando, mostra a posição na fila. */
+  queuePosition?: number;
 }) {
   const pct = progress?.pct ?? 0;
 
@@ -84,11 +87,15 @@ export default function UploadOverlay({
               className="mb-3 font-semibold"
               style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 5vw, 2.6rem)' }}
             >
-              Convertendo no servidor
+              {queuePosition ? 'Na fila de conversão' : 'Convertendo no servidor'}
             </h2>
             <div className="mx-auto mb-6 flex items-center justify-center gap-3">
               <Loader2 className="animate-spin text-[var(--color-rose)]" size={28} />
-              <span className="text-lg text-white/80">Processando o vídeo…</span>
+              <span className="text-lg text-white/80">
+                {queuePosition
+                  ? `Aguardando sua vez — ${queuePosition}º da fila`
+                  : 'Processando o vídeo…'}
+              </span>
             </div>
             {/* barra indeterminada */}
             <div className="mx-auto h-5 w-full overflow-hidden rounded-full bg-white/15">

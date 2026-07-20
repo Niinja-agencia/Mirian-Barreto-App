@@ -43,7 +43,41 @@ app.use((req, res, next) => {
 });
 
 const upload = multer({ dest: TMP_DIR, limits: { fileSize: 8 * 1024 * 1024 * 1024 } }); // 8 GB
-const jobs = new Map(); // jobId -> { status, workoutId, error }
+
+// Fila de conversão: só 1 FFmpeg por vez (a VPS é compartilhada com outros serviços)
+const jobs = new Map(); // jobId -> { status: queued|processing|done|error, workoutId, position?, error? }
+const queue = []; // [{ jobId, inputPath, workoutId }]
+let running = false;
+
+function refreshPositions() {
+  queue.forEach((j, i) => {
+    const cur = jobs.get(j.jobId);
+    if (cur?.status === 'queued') jobs.set(j.jobId, { ...cur, position: i + 1 });
+  });
+}
+
+function enqueue(jobId, inputPath, workoutId) {
+  queue.push({ jobId, inputPath, workoutId });
+  jobs.set(jobId, { status: 'queued', workoutId, position: queue.length });
+  refreshPositions();
+  pump();
+}
+
+async function pump() {
+  if (running) return;
+  const job = queue.shift();
+  if (!job) return;
+  running = true;
+  refreshPositions();
+  jobs.set(job.jobId, { status: 'processing', workoutId: job.workoutId });
+  try {
+    await processJob(job.jobId, job.inputPath, job.workoutId);
+  } finally {
+    running = false;
+    refreshPositions();
+    pump(); // segue para o próximo da fila
+  }
+}
 
 // ---------- auth ----------
 async function userFromRequest(req) {
@@ -101,16 +135,22 @@ async function processJob(jobId, inputPath, workoutId) {
 }
 
 // ---------- rotas ----------
-app.get('/health', (_req, res) => res.json({ ok: true, videos: fs.readdirSync(VIDEO_DIR).length }));
+app.get('/health', (_req, res) =>
+  res.json({
+    ok: true,
+    videos: fs.readdirSync(VIDEO_DIR).length,
+    converting: running,
+    queued: queue.length,
+  })
+);
 
 // Admin envia o vídeo bruto
 app.post('/upload', requireAdmin, upload.single('video'), async (req, res) => {
   const workoutId = req.body.workout_id;
   if (!workoutId || !req.file) return res.status(400).json({ error: 'workout_id e video obrigatorios' });
   const jobId = crypto.randomUUID();
-  jobs.set(jobId, { status: 'processing', workoutId });
-  res.status(202).json({ job_id: jobId });
-  processJob(jobId, req.file.path, workoutId); // segue em background
+  enqueue(jobId, req.file.path, workoutId); // converte 1 por vez
+  res.status(202).json({ job_id: jobId, queued: queue.length });
 });
 
 // Admin acompanha a conversão

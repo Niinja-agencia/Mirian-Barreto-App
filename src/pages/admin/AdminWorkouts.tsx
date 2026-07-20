@@ -62,6 +62,7 @@ export default function AdminWorkouts() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [phase, setPhase] = useState<'idle' | 'uploading' | 'converting'>('idle');
   const [progress, setProgress] = useState<UploadProgress | null>(null);
+  const [queuePos, setQueuePos] = useState<number | undefined>(undefined);
 
   async function load() {
     const [{ data: w }, { data: c }] = await Promise.all([
@@ -156,7 +157,9 @@ export default function AdminWorkouts() {
 
         setPhase('converting');
         toast.info('Vídeo enviado. Convertendo — pode levar alguns minutos.');
-        await waitForConversion(jobId, token);
+        await waitForConversion(jobId, token, (job) =>
+          setQueuePos(job.status === 'queued' ? job.position : undefined)
+        );
         toast.success('Vídeo convertido e publicado!');
       } catch (err) {
         setPhase('idle');
@@ -376,6 +379,7 @@ export default function AdminWorkouts() {
         <UploadOverlay
           phase={phase}
           progress={progress}
+          queuePosition={queuePos}
           onDismiss={
             phase === 'converting'
               ? () => {

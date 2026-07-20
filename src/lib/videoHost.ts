@@ -55,7 +55,9 @@ export function uploadWorkoutVideo(
 }
 
 export interface JobStatus {
-  status: 'processing' | 'done' | 'error';
+  status: 'queued' | 'processing' | 'done' | 'error';
+  /** posição na fila quando status === 'queued' */
+  position?: number;
   error?: string;
 }
 
@@ -68,9 +70,14 @@ export async function getJobStatus(jobId: string, token: string): Promise<JobSta
 }
 
 /** Aguarda a conversão terminar (consulta a cada 5s). */
-export async function waitForConversion(jobId: string, token: string): Promise<void> {
+export async function waitForConversion(
+  jobId: string,
+  token: string,
+  onUpdate?: (job: JobStatus) => void
+): Promise<void> {
   for (;;) {
     const job = await getJobStatus(jobId, token);
+    onUpdate?.(job);
     if (job.status === 'done') return;
     if (job.status === 'error') throw new Error(job.error || 'Erro na conversão.');
     await new Promise((r) => setTimeout(r, 5000));
