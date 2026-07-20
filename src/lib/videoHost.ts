@@ -1,23 +1,42 @@
 // Comunicação com o worker de vídeo na VPS (upload + conversão automática).
 const VIDEO_HOST = import.meta.env.VITE_VIDEO_HOST as string;
 
+export interface UploadProgress {
+  loaded: number;
+  total: number;
+  pct: number;
+  bytesPerSec: number;
+  etaSec: number;
+}
+
 /** Envia o vídeo bruto. Retorna o job_id da conversão. */
 export function uploadWorkoutVideo(
   file: File,
   workoutId: string,
   token: string,
-  onProgress: (pct: number) => void
+  onProgress: (p: UploadProgress) => void
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const form = new FormData();
     form.append('workout_id', workoutId);
     form.append('video', file);
 
+    const started = Date.now();
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${VIDEO_HOST}/upload`);
     xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      if (!e.lengthComputable) return;
+      const elapsed = (Date.now() - started) / 1000;
+      const bytesPerSec = elapsed > 0 ? e.loaded / elapsed : 0;
+      const etaSec = bytesPerSec > 0 ? Math.max(0, (e.total - e.loaded) / bytesPerSec) : 0;
+      onProgress({
+        loaded: e.loaded,
+        total: e.total,
+        pct: Math.round((e.loaded / e.total) * 100),
+        bytesPerSec,
+        etaSec,
+      });
     };
     xhr.onload = () => {
       if (xhr.status === 202) {

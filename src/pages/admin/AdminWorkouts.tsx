@@ -6,7 +6,8 @@ import { TextInput, SubmitButton } from '@/components/form';
 import Modal from '@/components/Modal';
 import { formatDuration, LEVEL_LABELS } from '@/lib/format';
 import { youtubeId } from '@/components/YouTubeEmbed';
-import { uploadWorkoutVideo, waitForConversion } from '@/lib/videoHost';
+import { uploadWorkoutVideo, waitForConversion, type UploadProgress } from '@/lib/videoHost';
+import UploadOverlay from '@/components/UploadOverlay';
 import type { Workout, WorkoutCategory, FitnessLevel } from '@/lib/database.types';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
@@ -60,7 +61,7 @@ export default function AdminWorkouts() {
   const [uploading, setUploading] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [phase, setPhase] = useState<'idle' | 'uploading' | 'converting'>('idle');
-  const [uploadPct, setUploadPct] = useState(0);
+  const [progress, setProgress] = useState<UploadProgress | null>(null);
 
   async function load() {
     const [{ data: w }, { data: c }] = await Promise.all([
@@ -150,8 +151,8 @@ export default function AdminWorkouts() {
         if (!token) throw new Error('Sessão expirada.');
 
         setPhase('uploading');
-        setUploadPct(0);
-        const jobId = await uploadWorkoutVideo(videoFile, saved.id as string, token, setUploadPct);
+        setProgress(null);
+        const jobId = await uploadWorkoutVideo(videoFile, saved.id as string, token, setProgress);
 
         setPhase('converting');
         toast.info('Vídeo enviado. Convertendo — pode levar alguns minutos.');
@@ -346,23 +347,6 @@ export default function AdminWorkouts() {
                   Selecionado: {videoFile.name} ({(videoFile.size / 1048576).toFixed(0)} MB)
                 </span>
               )}
-              {phase === 'uploading' && (
-                <span className="mt-2 block">
-                  <span className="text-xs text-[var(--color-black)]">Enviando… {uploadPct}%</span>
-                  <span className="mt-1 block h-2 w-full overflow-hidden rounded-full bg-[var(--color-warm-grey)]">
-                    <span
-                      className="block h-full bg-[var(--color-rose)] transition-all"
-                      style={{ width: `${uploadPct}%` }}
-                    />
-                  </span>
-                </span>
-              )}
-              {phase === 'converting' && (
-                <span className="mt-2 flex items-center gap-2 text-xs text-[var(--color-black)]">
-                  <Loader2 className="animate-spin" size={14} /> Convertendo no servidor… pode levar
-                  alguns minutos. Não feche esta janela.
-                </span>
-              )}
             </label>
             <label className="block">
               <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">
@@ -385,6 +369,9 @@ export default function AdminWorkouts() {
           <SubmitButton loading={saving} disabled={uploading}>Salvar treino</SubmitButton>
         </form>
       </Modal>
+
+      {/* Progresso em tela cheia do envio/conversão do vídeo */}
+      {phase !== 'idle' && <UploadOverlay phase={phase} progress={progress} />}
     </div>
   );
 }
