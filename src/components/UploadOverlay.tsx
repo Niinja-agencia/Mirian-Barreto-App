@@ -10,9 +10,12 @@ import type { UploadProgress } from '@/lib/videoHost';
 export default function UploadOverlay({
   phase,
   progress,
+  onDismiss,
 }: {
   phase: 'uploading' | 'converting';
   progress: UploadProgress | null;
+  /** Disponível só na conversão: fecha a tela e deixa o servidor terminar sozinho. */
+  onDismiss?: () => void;
 }) {
   const pct = progress?.pct ?? 0;
 
@@ -95,6 +98,15 @@ export default function UploadOverlay({
               O envio terminou. A conversão continua no servidor mesmo se você fechar esta janela —
               o treino é publicado automaticamente ao final.
             </p>
+
+            {onDismiss && (
+              <button
+                onClick={onDismiss}
+                className="mt-8 rounded-lg bg-[var(--color-rose)] px-10 py-3.5 text-sm font-semibold uppercase tracking-[0.08em] text-white transition-colors hover:bg-[var(--color-rose-hover)]"
+              >
+                OK, pode fechar
+              </button>
+            )}
           </>
         )}
       </div>

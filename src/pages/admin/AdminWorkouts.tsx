@@ -370,8 +370,25 @@ export default function AdminWorkouts() {
         </form>
       </Modal>
 
-      {/* Progresso em tela cheia do envio/conversão do vídeo */}
-      {phase !== 'idle' && <UploadOverlay phase={phase} progress={progress} />}
+      {/* Progresso em tela cheia do envio/conversão do vídeo.
+          Na conversão o admin pode fechar: o servidor termina e publica sozinho. */}
+      {phase !== 'idle' && (
+        <UploadOverlay
+          phase={phase}
+          progress={progress}
+          onDismiss={
+            phase === 'converting'
+              ? () => {
+                  setPhase('idle');
+                  setVideoFile(null);
+                  setSaving(false);
+                  setOpen(false);
+                  load();
+                }
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }
