@@ -7,10 +7,10 @@
 // para que a retentativa do MP consiga reprocessar.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { json } from '../_shared/cors.ts';
+import { contaMercadoPago } from '../_shared/mpToken.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN')!;
 const MP_WEBHOOK_SECRET = Deno.env.get('MP_WEBHOOK_SECRET') ?? '';
 const MP = 'https://api.mercadopago.com';
 
@@ -109,6 +109,9 @@ Deno.serve(async (req) => {
     if (!(await validSignature(req, String(dataId)))) {
       return json({ error: 'assinatura invalida' }, 401);
     }
+
+    // Consulta o evento pela mesma conta que criou a cobrança.
+    const { token: MP_ACCESS_TOKEN } = await contaMercadoPago(admin);
 
     eventKey = `${type}:${dataId}`;
 

@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router';
-import { BarChart3, Dumbbell, FolderTree, CreditCard, Users, Megaphone } from 'lucide-react';
+import { BarChart3, Dumbbell, FolderTree, CreditCard, Users, Megaphone, Wallet } from 'lucide-react';
 import DashboardShell, { type NavItem } from '@/components/DashboardShell';
 
 const nav: NavItem[] = [
@@ -9,6 +9,7 @@ const nav: NavItem[] = [
   { to: '/admin/planos', label: 'Planos', icon: CreditCard },
   { to: '/admin/alunas', label: 'Alunas', icon: Users },
   { to: '/admin/avisos', label: 'Avisos', icon: Megaphone },
+  { to: '/admin/pagamentos', label: 'Pagamentos', icon: Wallet },
 ];
 
 export default function AdminLayout() {

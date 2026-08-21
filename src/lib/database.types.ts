@@ -159,6 +159,21 @@ export type Database = {
       current_tier: { Args: { uid: string }; Returns: number };
       is_admin: { Args: { uid: string }; Returns: boolean };
       workout_youtube_id: { Args: { p_workout_id: string }; Returns: string | null };
+      // Status da conta de pagamento conectada. Nunca devolve o token — só o
+      // suficiente para a tela dizer quem está conectado e desde quando.
+      payment_connection_status: {
+        Args: Record<string, never>;
+        Returns: {
+          conectado: boolean;
+          provider: string;
+          mp_user_id: string | null;
+          nickname: string | null;
+          email: string | null;
+          live_mode: boolean | null;
+          connected_at: string | null;
+          expira_em: string | null;
+        }[];
+      };
     };
     Enums: {
       user_role: UserRole;

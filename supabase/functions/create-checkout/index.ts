@@ -9,11 +9,11 @@
 // a tela oferecendo plano anual.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/cors.ts';
+import { contaMercadoPago } from '../_shared/mpToken.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN')!;
 const APP_URL = Deno.env.get('APP_URL') ?? 'http://localhost:3000';
 const MP = 'https://api.mercadopago.com';
 
@@ -38,6 +38,14 @@ Deno.serve(async (req) => {
     const billing: 'monthly' | 'annual' = billingIn === 'annual' ? 'annual' : 'monthly';
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+    // Cobra pela conta que a Mirian conectou no painel. Sem conexão, cai no
+    // secret MP_ACCESS_TOKEN; sem nenhum dos dois, não há onde receber.
+    const { token: MP_ACCESS_TOKEN } = await contaMercadoPago(admin);
+    if (!MP_ACCESS_TOKEN) {
+      return json({ error: 'conta_de_pagamento_nao_conectada' }, 503);
+    }
+
     const { data: plan } = await admin.from('plans').select('*').eq('slug', plan_slug).maybeSingle();
     if (!plan) return json({ error: 'plano não encontrado' }, 404);
 

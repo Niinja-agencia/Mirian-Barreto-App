@@ -14,6 +14,17 @@
     --color-divider: rgba(255, 255, 255, 0.1);
     --color-divider-dark: rgba(10, 10, 10, 0.1);
 
+    /* Bordas de campo e cartão. O divisor de 10% é bom para separar seções,
+       mas fraco demais para desenhar um input: no branco do cartão o campo
+       sumia. Estes dois têm um leve viés do rosa da marca, para o cinza não
+       parecer escolhido no chute. */
+    --color-border: #E4DDE0;
+    --color-border-strong: #C9BEC3;
+
+    /* Fundo das áreas logadas — creme bem claro, para o cartão branco
+       destacar. */
+    --color-surface: #F7F4F1;
+
     --font-display: 'Poppins', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
     --font-body: 'Poppins', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
 

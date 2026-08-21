@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { TextInput, SubmitButton } from '@/components/form';
+import { TextInput, SelectInput, SubmitButton } from '@/components/form';
 import { LEVEL_LABELS } from '@/lib/format';
 import type { FitnessLevel } from '@/lib/database.types';
 
@@ -56,68 +56,107 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-xl space-y-8">
-      <h1
-        className="text-[var(--color-black)] font-semibold"
-        style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.8rem, 4vw, 2.6rem)' }}
-      >
-        Perfil
-      </h1>
+    <div className="space-y-6">
+      <div>
+        <h1
+          className="font-semibold text-[var(--color-black)]"
+          style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem, 3vw, 2rem)' }}
+        >
+          Perfil
+        </h1>
+        <p className="mt-1 text-sm text-[var(--color-medium-grey)]">
+          Seus dados e o acesso à conta.
+        </p>
+      </div>
 
-      {/* Dados pessoais */}
-      <form
-        onSubmit={saveProfile}
-        className="space-y-5 rounded-2xl bg-white p-6"
-        style={{ border: '1px solid var(--color-divider-dark)' }}
-      >
-        <h2 className="font-semibold text-[var(--color-black)]">Dados pessoais</h2>
-        <TextInput label="E-mail" value={user?.email ?? ''} disabled readOnly />
-        <TextInput label="Nome completo" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-        <TextInput label="WhatsApp" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">Nível</span>
-          <select
-            value={level}
-            onChange={(e) => setLevel(e.target.value as FitnessLevel)}
-            className="w-full rounded-lg border border-[var(--color-divider-dark)] bg-white px-3.5 py-2.5 text-sm text-[var(--color-black)]"
-          >
-            {Object.entries(LEVEL_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </label>
-        <SubmitButton loading={savingProfile}>Salvar alterações</SubmitButton>
-      </form>
+      {/* Duas colunas no desktop: os cartões deixam de ficar empilhados numa
+          coluna estreita com meia tela vazia ao lado. */}
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+        {/* Dados pessoais */}
+        <form
+          onSubmit={saveProfile}
+          className="rounded-2xl border border-[var(--color-border)] bg-white p-6"
+        >
+          <h2 className="text-base font-semibold text-[var(--color-black)]">Dados pessoais</h2>
 
-      {/* Senha */}
-      <form
-        onSubmit={changePassword}
-        className="space-y-5 rounded-2xl bg-white p-6"
-        style={{ border: '1px solid var(--color-divider-dark)' }}
-      >
-        <h2 className="font-semibold text-[var(--color-black)]">Trocar senha</h2>
-        <TextInput
-          label="Nova senha"
-          type="password"
-          autoComplete="new-password"
-          minLength={6}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <TextInput
-          label="Confirmar nova senha"
-          type="password"
-          autoComplete="new-password"
-          minLength={6}
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          required
-        />
-        <SubmitButton loading={savingPwd}>Alterar senha</SubmitButton>
-      </form>
+          <div className="mt-5 space-y-4">
+            <TextInput
+              label="E-mail"
+              value={user?.email ?? ''}
+              disabled
+              readOnly
+              hint="O e-mail de acesso não pode ser alterado por aqui."
+            />
+            <TextInput
+              label="Nome completo"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
+            <TextInput
+              label="WhatsApp"
+              type="tel"
+              placeholder="(31) 90000-0000"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+            <SelectInput
+              label="Nível"
+              value={level}
+              onChange={(e) => setLevel(e.target.value as FitnessLevel)}
+            >
+              {Object.entries(LEVEL_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
+              ))}
+            </SelectInput>
+          </div>
+
+          <div className="mt-6 flex justify-end border-t border-[var(--color-border)] pt-5">
+            <SubmitButton loading={savingProfile} block={false}>
+              Salvar alterações
+            </SubmitButton>
+          </div>
+        </form>
+
+        {/* Senha */}
+        <form
+          onSubmit={changePassword}
+          className="rounded-2xl border border-[var(--color-border)] bg-white p-6"
+        >
+          <h2 className="text-base font-semibold text-[var(--color-black)]">Trocar senha</h2>
+
+          <div className="mt-5 space-y-4">
+            <TextInput
+              label="Nova senha"
+              type="password"
+              autoComplete="new-password"
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              hint="Pelo menos 6 caracteres."
+            />
+            <TextInput
+              label="Confirmar nova senha"
+              type="password"
+              autoComplete="new-password"
+              minLength={6}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Secundário: trocar senha é ação eventual, não compete com salvar. */}
+          <div className="mt-6 flex justify-end border-t border-[var(--color-border)] pt-5">
+            <SubmitButton loading={savingPwd} variant="secondary" block={false}>
+              Alterar senha
+            </SubmitButton>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

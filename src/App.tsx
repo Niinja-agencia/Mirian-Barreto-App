@@ -31,6 +31,7 @@ const AdminCategories = lazy(() => import('@/pages/admin/AdminCategories'));
 const AdminPlans = lazy(() => import('@/pages/admin/AdminPlans'));
 const AdminStudents = lazy(() => import('@/pages/admin/AdminStudents'));
 const AdminAnnouncements = lazy(() => import('@/pages/admin/AdminAnnouncements'));
+const AdminPayments = lazy(() => import('@/pages/admin/AdminPayments'));
 
 function App() {
   return (
@@ -87,6 +88,7 @@ function App() {
               <Route path="planos" element={<AdminPlans />} />
               <Route path="alunas" element={<AdminStudents />} />
               <Route path="avisos" element={<AdminAnnouncements />} />
+              <Route path="pagamentos" element={<AdminPayments />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

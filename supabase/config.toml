@@ -14,6 +14,11 @@ verify_jwt = true
 [functions.mp-webhook]
 verify_jwt = false
 
+# O callback do OAuth é um redirect do navegador vindo do Mercado Pago e não
+# carrega JWT. Quem exige admin nas outras ações é o código da função.
+[functions.mp-oauth]
+verify_jwt = false
+
 [functions.send-emails]
 verify_jwt = false
 

@@ -6,18 +6,29 @@ import { TextInput, SubmitButton } from '@/components/form';
 import { useAuth } from '@/context/AuthContext';
 
 export default function Login() {
-  const { signIn, session } = useAuth();
+  const { signIn, session, profile, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const from = (location.state as { from?: string } | null)?.from ?? '/app';
+  // Quando a pessoa foi barrada numa rota, volta para ela; senão, cada uma
+  // para a sua casa. Antes ia sempre para /app, e a Mirian caía na área da
+  // aluna, sem plano, com todos os treinos marcados como bloqueados — o painel
+  // de administração existia mas nada levava até ele.
+  const from = (location.state as { from?: string } | null)?.from ?? null;
 
   useEffect(() => {
-    if (session) navigate(from, { replace: true });
-  }, [session, navigate, from]);
+    if (!session) return;
+    if (from) {
+      navigate(from, { replace: true });
+      return;
+    }
+    // Espera o perfil chegar para saber se é admin.
+    if (!profile) return;
+    navigate(isAdmin ? '/admin' : '/app', { replace: true });
+  }, [session, profile, isAdmin, navigate, from]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,7 +40,8 @@ export default function Login() {
       return;
     }
     toast.success('Bem-vinda de volta!');
-    navigate(from, { replace: true });
+    // Para onde ir é decidido num lugar só, no efeito acima — ele espera o
+    // perfil chegar para saber se manda para o painel ou para a área da aluna.
   }
 
   return (
