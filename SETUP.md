@@ -267,6 +267,20 @@ npm run dev      # http://localhost:3000
 Rotas: `/` (landing), `/login`, `/cadastro`, `/app` (aluna), `/admin` (admin),
 `/checkout/:slug`.
 
+### Cuidado ao mexer no `vercel.json`
+
+A regra de rewrite é `/((?!assets/).*)` de propósito: **não volte para
+`/(.*)`**. Com o catch-all cobrindo tudo, um arquivo de JS que falte no deploy
+(cada rota é um `React.lazy`, então são dezenas) responde `index.html` com
+status 200. O navegador recusa HTML como módulo, o import da rota falha, o
+React desmonta a árvore e sobra tela preta — e como o service worker guarda a
+versão anterior, nem recarregar sai disso. Fora do rewrite, o arquivo que falta
+dá 404 e o `src/lib/chunkGuard.ts` limpa o cache e recarrega sozinho.
+
+O `vercel.json` também não aceita chave extra nenhuma (nem para comentário):
+a validação do schema derruba o build com `should NOT have additional
+property`.
+
 ---
 
 ## Pendências conhecidas / próximos passos
