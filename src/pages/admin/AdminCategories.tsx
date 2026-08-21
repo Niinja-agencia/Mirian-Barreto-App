@@ -7,7 +7,7 @@ import Modal from '@/components/Modal';
 import type { WorkoutCategory } from '@/lib/database.types';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
-const empty = { id: '', slug: '', name_pt: '', name_en: '', sort_order: 0 };
+const empty = { id: '', slug: '', name_pt: '', sort_order: 0 };
 
 export default function AdminCategories() {
   const [rows, setRows] = useState<WorkoutCategory[]>([]);
@@ -30,17 +30,20 @@ export default function AdminCategories() {
     setOpen(true);
   }
   function openEdit(c: WorkoutCategory) {
-    setForm({ id: c.id, slug: c.slug, name_pt: c.name_pt, name_en: c.name_en, sort_order: c.sort_order });
+    setForm({ id: c.id, slug: c.slug, name_pt: c.name_pt, sort_order: c.sort_order });
     setOpen(true);
   }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    // Painel só em português; a coluna _en (NOT NULL, usada na vitrine EN)
+    // recebe o mesmo texto.
+    const nome = form.name_pt.trim();
     const payload = {
       slug: form.slug.trim(),
-      name_pt: form.name_pt.trim(),
-      name_en: form.name_en.trim(),
+      name_pt: nome,
+      name_en: nome,
       sort_order: Number(form.sort_order),
     };
     const { error } = form.id
@@ -82,7 +85,7 @@ export default function AdminCategories() {
           >
             <div>
               <p className="font-medium text-[var(--color-black)]">{c.name_pt}</p>
-              <p className="text-xs text-[var(--color-medium-grey)]">{c.slug} · {c.name_en}</p>
+              <p className="text-xs text-[var(--color-medium-grey)]">{c.slug}</p>
             </div>
             <div className="flex gap-2">
               <button onClick={() => openEdit(c)} className="p-2 text-[var(--color-medium-grey)] hover:text-[var(--color-rose)]">
@@ -115,10 +118,7 @@ export default function AdminCategories() {
         <form id="form-categoria" onSubmit={save}>
           <FormSections>
             <FormSection title="Nome">
-              <FieldGrid>
-                <TextInput label="Nome (PT)" value={form.name_pt} onChange={(e) => setForm({ ...form, name_pt: e.target.value })} required />
-                <TextInput label="Nome (EN)" value={form.name_en} onChange={(e) => setForm({ ...form, name_en: e.target.value })} required />
-              </FieldGrid>
+              <TextInput label="Nome" value={form.name_pt} onChange={(e) => setForm({ ...form, name_pt: e.target.value })} required />
             </FormSection>
 
             <FormSection title="Organização">

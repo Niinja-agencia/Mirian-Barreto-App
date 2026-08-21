@@ -19,9 +19,7 @@ import FullScreenLoader from '@/components/FullScreenLoader';
 const empty = {
   id: '',
   title_pt: '',
-  title_en: '',
   body_pt: '',
-  body_en: '',
   pinned: false,
   published: true,
 };
@@ -54,9 +52,7 @@ export default function AdminAnnouncements() {
     setForm({
       id: a.id,
       title_pt: a.title_pt,
-      title_en: a.title_en,
       body_pt: a.body_pt ?? '',
-      body_en: a.body_en ?? '',
       pinned: a.pinned,
       published: a.published,
     });
@@ -66,11 +62,15 @@ export default function AdminAnnouncements() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    // Painel só em português; as colunas _en (usadas na versão EN do app)
+    // recebem o mesmo texto, em vez de ficarem vazias.
+    const titulo = form.title_pt.trim();
+    const corpo = form.body_pt.trim() || null;
     const payload = {
-      title_pt: form.title_pt.trim(),
-      title_en: form.title_en.trim(),
-      body_pt: form.body_pt.trim() || null,
-      body_en: form.body_en.trim() || null,
+      title_pt: titulo,
+      title_en: titulo,
+      body_pt: corpo,
+      body_en: corpo,
       pinned: form.pinned,
       published: form.published,
     };
@@ -159,18 +159,9 @@ export default function AdminAnnouncements() {
       >
         <form id="form-aviso" onSubmit={save}>
           <FormSections>
-            <FormSection title="Título">
-              <FieldGrid>
-                <TextInput label="Título (PT)" value={form.title_pt} onChange={(e) => setForm({ ...form, title_pt: e.target.value })} required />
-                <TextInput label="Título (EN)" value={form.title_en} onChange={(e) => setForm({ ...form, title_en: e.target.value })} required />
-              </FieldGrid>
-            </FormSection>
-
-            <FormSection title="Mensagem">
-              <FieldGrid>
-                <TextArea label="Mensagem (PT)" rows={4} value={form.body_pt} onChange={(e) => setForm({ ...form, body_pt: e.target.value })} />
-                <TextArea label="Mensagem (EN)" rows={4} value={form.body_en} onChange={(e) => setForm({ ...form, body_en: e.target.value })} />
-              </FieldGrid>
+            <FormSection title="Conteúdo">
+              <TextInput label="Título" value={form.title_pt} onChange={(e) => setForm({ ...form, title_pt: e.target.value })} required />
+              <TextArea label="Mensagem" rows={5} value={form.body_pt} onChange={(e) => setForm({ ...form, body_pt: e.target.value })} />
             </FormSection>
 
             <FormSection title="Publicação">

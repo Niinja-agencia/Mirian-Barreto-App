@@ -24,9 +24,7 @@ import FullScreenLoader from '@/components/FullScreenLoader';
 interface FormState {
   id: string;
   title_pt: string;
-  title_en: string;
   description_pt: string;
-  description_en: string;
   category_id: string;
   level: FitnessLevel;
   duration_min: number;
@@ -40,9 +38,7 @@ interface FormState {
 const empty: FormState = {
   id: '',
   title_pt: '',
-  title_en: '',
   description_pt: '',
-  description_en: '',
   category_id: '',
   level: 'iniciante',
   duration_min: 0,
@@ -106,9 +102,7 @@ export default function AdminWorkouts() {
     setForm({
       id: w.id,
       title_pt: w.title_pt,
-      title_en: w.title_en,
       description_pt: w.description_pt ?? '',
-      description_en: w.description_en ?? '',
       category_id: w.category_id ?? '',
       level: w.level,
       duration_min: Math.round(w.duration_seconds / 60),
@@ -141,11 +135,17 @@ export default function AdminWorkouts() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    // O painel é só em português. As colunas _en continuam existindo (a vitrine
+    // tem versão EN e elas são NOT NULL), então recebem o mesmo texto: melhor a
+    // aluna estrangeira ver o português do que um campo vazio.
+    const titulo = form.title_pt.trim();
+    const descricao = form.description_pt.trim() || null;
+
     const payload: Record<string, unknown> = {
-      title_pt: form.title_pt.trim(),
-      title_en: form.title_en.trim(),
-      description_pt: form.description_pt.trim() || null,
-      description_en: form.description_en.trim() || null,
+      title_pt: titulo,
+      title_en: titulo,
+      description_pt: descricao,
+      description_en: descricao,
       category_id: form.category_id || null,
       level: form.level,
       duration_seconds: Math.round(form.duration_min * 60),
@@ -310,14 +310,8 @@ export default function AdminWorkouts() {
         <form id="form-treino" onSubmit={save}>
           <FormSections>
             <FormSection title="Identificação">
-              <FieldGrid>
-                <TextInput label="Título (PT)" value={form.title_pt} onChange={(e) => setForm({ ...form, title_pt: e.target.value })} required />
-                <TextInput label="Título (EN)" value={form.title_en} onChange={(e) => setForm({ ...form, title_en: e.target.value })} required />
-              </FieldGrid>
-              <FieldGrid>
-                <TextArea label="Descrição (PT)" value={form.description_pt} onChange={(e) => setForm({ ...form, description_pt: e.target.value })} />
-                <TextArea label="Descrição (EN)" value={form.description_en} onChange={(e) => setForm({ ...form, description_en: e.target.value })} />
-              </FieldGrid>
+              <TextInput label="Título" value={form.title_pt} onChange={(e) => setForm({ ...form, title_pt: e.target.value })} required />
+              <TextArea label="Descrição" value={form.description_pt} onChange={(e) => setForm({ ...form, description_pt: e.target.value })} />
             </FormSection>
 
             <FormSection

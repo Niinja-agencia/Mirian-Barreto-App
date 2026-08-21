@@ -27,7 +27,6 @@ export default function AdminPlans() {
   const [priceM, setPriceM] = useState(0);
   const [priceA, setPriceA] = useState(0);
   const [featuresPt, setFeaturesPt] = useState('');
-  const [featuresEn, setFeaturesEn] = useState('');
   const [mpMonthly, setMpMonthly] = useState('');
   const [mpAnnual, setMpAnnual] = useState('');
   const [active, setActive] = useState(true);
@@ -46,7 +45,6 @@ export default function AdminPlans() {
     setPriceM(Number(p.price_monthly));
     setPriceA(Number(p.price_annual));
     setFeaturesPt(p.features_pt.join('\n'));
-    setFeaturesEn(p.features_en.join('\n'));
     setMpMonthly(p.mp_plan_monthly_id ?? '');
     setMpAnnual(p.mp_plan_annual_id ?? '');
     setActive(p.active);
@@ -57,13 +55,16 @@ export default function AdminPlans() {
     e.preventDefault();
     if (!editing) return;
     setSaving(true);
+    // Painel só em português; a lista _en (usada na versão EN da landing)
+    // recebe a mesma lista.
+    const recursos = featuresPt.split('\n').map((s) => s.trim()).filter(Boolean);
     const { error } = await supabase
       .from('plans')
       .update({
         price_monthly: priceM,
         price_annual: priceA,
-        features_pt: featuresPt.split('\n').map((s) => s.trim()).filter(Boolean),
-        features_en: featuresEn.split('\n').map((s) => s.trim()).filter(Boolean),
+        features_pt: recursos,
+        features_en: recursos,
         mp_plan_monthly_id: mpMonthly.trim() || null,
         mp_plan_annual_id: mpAnnual.trim() || null,
         active,
@@ -133,10 +134,7 @@ export default function AdminPlans() {
             </FormSection>
 
             <FormSection title="Recursos" description="Um por linha. É a lista que aparece no cartão do plano.">
-              <FieldGrid>
-                <TextArea label="Recursos (PT)" rows={5} value={featuresPt} onChange={(e) => setFeaturesPt(e.target.value)} />
-                <TextArea label="Recursos (EN)" rows={5} value={featuresEn} onChange={(e) => setFeaturesEn(e.target.value)} />
-              </FieldGrid>
+              <TextArea label="Recursos" rows={6} value={featuresPt} onChange={(e) => setFeaturesPt(e.target.value)} />
             </FormSection>
 
             <FormSection title="Mercado Pago" description="O preapproval_plan_id de cada frequência.">
