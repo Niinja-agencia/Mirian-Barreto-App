@@ -3,7 +3,8 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "_comentario": "Rota de SPA cai no index.html, MENOS /assets. Com o catch-all cobrindo tudo, um arquivo de JS que sumiu do servidor (deploy novo, cache velho) voltava index.html com status 200; o navegador recebia HTML no lugar de um modulo, o import da rota falhava e o React desmontava inteiro, deixando a tela preta. Fora do rewrite, o arquivo que falta responde 404 e o app consegue tratar.",
+      "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }
   ],

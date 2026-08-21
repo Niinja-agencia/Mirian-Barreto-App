@@ -3,6 +3,12 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import './index.css'
 import App from './App.tsx'
+import ErrorBoundary from '@/components/ErrorBoundary'
+import { instalarGuardaDeChunk } from '@/lib/chunkGuard'
+
+// Precisa vir antes de montar o React: a falha que interessa acontece ao
+// baixar o arquivo da rota, ou seja, antes de qualquer componente existir.
+instalarGuardaDeChunk()
 
 // Captura o evento de instalação cedo (pode disparar antes do React montar).
 declare global {
@@ -18,8 +24,10 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>,
 )
