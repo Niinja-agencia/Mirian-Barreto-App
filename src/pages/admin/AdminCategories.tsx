@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { TextInput, SubmitButton } from '@/components/form';
+import { TextInput, FormSection, FormSections, FieldGrid, SubmitButton } from '@/components/form';
 import Modal from '@/components/Modal';
 import type { WorkoutCategory } from '@/lib/database.types';
 import FullScreenLoader from '@/components/FullScreenLoader';
@@ -96,13 +96,50 @@ export default function AdminCategories() {
         ))}
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title={form.id ? 'Editar categoria' : 'Nova categoria'}>
-        <form onSubmit={save} className="space-y-4">
-          <TextInput label="Slug (url)" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} required />
-          <TextInput label="Nome (PT)" value={form.name_pt} onChange={(e) => setForm({ ...form, name_pt: e.target.value })} required />
-          <TextInput label="Nome (EN)" value={form.name_en} onChange={(e) => setForm({ ...form, name_en: e.target.value })} required />
-          <TextInput label="Ordem" type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} />
-          <SubmitButton loading={saving}>Salvar</SubmitButton>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={form.id ? 'Editar categoria' : 'Nova categoria'}
+        subtitle="Como o grupo de treinos aparece na biblioteca."
+        footer={
+          <>
+            <SubmitButton type="button" variant="secondary" block={false} onClick={() => setOpen(false)}>
+              Cancelar
+            </SubmitButton>
+            <SubmitButton form="form-categoria" loading={saving} block={false}>
+              Salvar
+            </SubmitButton>
+          </>
+        }
+      >
+        <form id="form-categoria" onSubmit={save}>
+          <FormSections>
+            <FormSection title="Nome">
+              <FieldGrid>
+                <TextInput label="Nome (PT)" value={form.name_pt} onChange={(e) => setForm({ ...form, name_pt: e.target.value })} required />
+                <TextInput label="Nome (EN)" value={form.name_en} onChange={(e) => setForm({ ...form, name_en: e.target.value })} required />
+              </FieldGrid>
+            </FormSection>
+
+            <FormSection title="Organização">
+              <FieldGrid>
+                <TextInput
+                  label="Slug (url)"
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                  required
+                  hint="Vai no endereço da página. Letras minúsculas e hífen."
+                />
+                <TextInput
+                  label="Ordem"
+                  type="number"
+                  value={form.sort_order}
+                  onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })}
+                  hint="Menor número aparece primeiro."
+                />
+              </FieldGrid>
+            </FormSection>
+          </FormSections>
         </form>
       </Modal>
     </div>

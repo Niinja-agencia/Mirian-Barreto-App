@@ -2,7 +2,15 @@ import { useEffect, useState } from 'react';
 import { Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { TextInput, SubmitButton } from '@/components/form';
+import {
+  TextInput,
+  TextArea,
+  CheckboxField,
+  FormSection,
+  FormSections,
+  FieldGrid,
+  SubmitButton,
+} from '@/components/form';
 import Modal from '@/components/Modal';
 import { brl } from '@/lib/format';
 import type { Plan } from '@/lib/database.types';
@@ -95,28 +103,58 @@ export default function AdminPlans() {
         ))}
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title={`Editar ${editing?.name_pt ?? ''}`}>
-        <form onSubmit={save} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <TextInput label="Preço mensal (R$)" type="number" step="0.01" value={priceM} onChange={(e) => setPriceM(Number(e.target.value))} />
-            <TextInput label="Preço anual (R$)" type="number" step="0.01" value={priceA} onChange={(e) => setPriceA(Number(e.target.value))} />
-          </div>
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">Recursos PT (um por linha)</span>
-            <textarea value={featuresPt} onChange={(e) => setFeaturesPt(e.target.value)} rows={4} className="w-full rounded-lg border border-[var(--color-divider-dark)] px-3.5 py-2.5 text-sm" />
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">Recursos EN (um por linha)</span>
-            <textarea value={featuresEn} onChange={(e) => setFeaturesEn(e.target.value)} rows={4} className="w-full rounded-lg border border-[var(--color-divider-dark)] px-3.5 py-2.5 text-sm" />
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <TextInput label="MP plan ID (mensal)" value={mpMonthly} onChange={(e) => setMpMonthly(e.target.value)} placeholder="preapproval_plan_id" />
-            <TextInput label="MP plan ID (anual)" value={mpAnnual} onChange={(e) => setMpAnnual(e.target.value)} placeholder="preapproval_plan_id" />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-[var(--color-black)]">
-            <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Plano ativo
-          </label>
-          <SubmitButton loading={saving}>Salvar</SubmitButton>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={`Editar ${editing?.name_pt ?? ''}`}
+        subtitle="O preço daqui é o que a landing e o checkout mostram."
+        size="xl"
+        footer={
+          <>
+            <SubmitButton type="button" variant="secondary" block={false} onClick={() => setOpen(false)}>
+              Cancelar
+            </SubmitButton>
+            <SubmitButton form="form-plano" loading={saving} block={false}>
+              Salvar
+            </SubmitButton>
+          </>
+        }
+      >
+        <form id="form-plano" onSubmit={save}>
+          <FormSections>
+            <FormSection
+              title="Preço"
+              description="O seletor mensal/anual só aparece para a aluna quando o anual for menor que 12x o mensal."
+            >
+              <FieldGrid>
+                <TextInput label="Preço mensal (R$)" type="number" step="0.01" min={0} value={priceM} onChange={(e) => setPriceM(Number(e.target.value))} />
+                <TextInput label="Preço anual (R$)" type="number" step="0.01" min={0} value={priceA} onChange={(e) => setPriceA(Number(e.target.value))} />
+              </FieldGrid>
+            </FormSection>
+
+            <FormSection title="Recursos" description="Um por linha. É a lista que aparece no cartão do plano.">
+              <FieldGrid>
+                <TextArea label="Recursos (PT)" rows={5} value={featuresPt} onChange={(e) => setFeaturesPt(e.target.value)} />
+                <TextArea label="Recursos (EN)" rows={5} value={featuresEn} onChange={(e) => setFeaturesEn(e.target.value)} />
+              </FieldGrid>
+            </FormSection>
+
+            <FormSection title="Mercado Pago" description="O preapproval_plan_id de cada frequência.">
+              <FieldGrid>
+                <TextInput label="Plano mensal" value={mpMonthly} onChange={(e) => setMpMonthly(e.target.value)} placeholder="preapproval_plan_id" />
+                <TextInput label="Plano anual" value={mpAnnual} onChange={(e) => setMpAnnual(e.target.value)} placeholder="preapproval_plan_id" />
+              </FieldGrid>
+            </FormSection>
+
+            <FormSection title="Disponibilidade">
+              <CheckboxField
+                label="Plano ativo"
+                description="Desmarcado, some da landing e ninguém consegue assinar."
+                checked={active}
+                onChange={setActive}
+              />
+            </FormSection>
+          </FormSections>
         </form>
       </Modal>
     </div>

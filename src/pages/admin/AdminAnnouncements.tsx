@@ -2,7 +2,15 @@ import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Pin, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { TextInput, SubmitButton } from '@/components/form';
+import {
+  TextInput,
+  TextArea,
+  CheckboxField,
+  FormSection,
+  FormSections,
+  FieldGrid,
+  SubmitButton,
+} from '@/components/form';
 import Modal from '@/components/Modal';
 import { formatDate } from '@/lib/format';
 import type { Announcement } from '@/lib/database.types';
@@ -132,27 +140,56 @@ export default function AdminAnnouncements() {
         )}
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title={form.id ? 'Editar aviso' : 'Novo aviso'}>
-        <form onSubmit={save} className="space-y-4">
-          <TextInput label="Título (PT)" value={form.title_pt} onChange={(e) => setForm({ ...form, title_pt: e.target.value })} required />
-          <TextInput label="Título (EN)" value={form.title_en} onChange={(e) => setForm({ ...form, title_en: e.target.value })} required />
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">Mensagem (PT)</span>
-            <textarea value={form.body_pt} onChange={(e) => setForm({ ...form, body_pt: e.target.value })} rows={3} className="w-full rounded-lg border border-[var(--color-divider-dark)] px-3.5 py-2.5 text-sm" />
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">Mensagem (EN)</span>
-            <textarea value={form.body_en} onChange={(e) => setForm({ ...form, body_en: e.target.value })} rows={3} className="w-full rounded-lg border border-[var(--color-divider-dark)] px-3.5 py-2.5 text-sm" />
-          </label>
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2 text-sm text-[var(--color-black)]">
-              <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} /> Fixar no topo
-            </label>
-            <label className="flex items-center gap-2 text-sm text-[var(--color-black)]">
-              <input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} /> Publicado
-            </label>
-          </div>
-          <SubmitButton loading={saving}>Salvar aviso</SubmitButton>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={form.id ? 'Editar aviso' : 'Novo aviso'}
+        subtitle="Aparece para as alunas na área logada."
+        size="xl"
+        footer={
+          <>
+            <SubmitButton type="button" variant="secondary" block={false} onClick={() => setOpen(false)}>
+              Cancelar
+            </SubmitButton>
+            <SubmitButton form="form-aviso" loading={saving} block={false}>
+              Salvar aviso
+            </SubmitButton>
+          </>
+        }
+      >
+        <form id="form-aviso" onSubmit={save}>
+          <FormSections>
+            <FormSection title="Título">
+              <FieldGrid>
+                <TextInput label="Título (PT)" value={form.title_pt} onChange={(e) => setForm({ ...form, title_pt: e.target.value })} required />
+                <TextInput label="Título (EN)" value={form.title_en} onChange={(e) => setForm({ ...form, title_en: e.target.value })} required />
+              </FieldGrid>
+            </FormSection>
+
+            <FormSection title="Mensagem">
+              <FieldGrid>
+                <TextArea label="Mensagem (PT)" rows={4} value={form.body_pt} onChange={(e) => setForm({ ...form, body_pt: e.target.value })} />
+                <TextArea label="Mensagem (EN)" rows={4} value={form.body_en} onChange={(e) => setForm({ ...form, body_en: e.target.value })} />
+              </FieldGrid>
+            </FormSection>
+
+            <FormSection title="Publicação">
+              <FieldGrid>
+                <CheckboxField
+                  label="Fixar no topo"
+                  description="Sobe na frente dos demais avisos."
+                  checked={form.pinned}
+                  onChange={(v) => setForm({ ...form, pinned: v })}
+                />
+                <CheckboxField
+                  label="Publicado"
+                  description="Desmarcado, fica só como rascunho."
+                  checked={form.published}
+                  onChange={(v) => setForm({ ...form, published: v })}
+                />
+              </FieldGrid>
+            </FormSection>
+          </FormSections>
         </form>
       </Modal>
     </div>

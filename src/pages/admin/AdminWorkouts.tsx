@@ -2,7 +2,17 @@ import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { TextInput, SubmitButton } from '@/components/form';
+import {
+  TextInput,
+  SelectInput,
+  TextArea,
+  FileField,
+  CheckboxField,
+  FormSection,
+  FormSections,
+  FieldGrid,
+  SubmitButton,
+} from '@/components/form';
 import Modal from '@/components/Modal';
 import { formatDuration, LEVEL_LABELS } from '@/lib/format';
 import { youtubeId } from '@/components/YouTubeEmbed';
@@ -280,116 +290,124 @@ export default function AdminWorkouts() {
         </table>
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title={form.id ? 'Editar treino' : 'Novo treino'}>
-        <form onSubmit={save} className="space-y-4">
-          <TextInput label="Título (PT)" value={form.title_pt} onChange={(e) => setForm({ ...form, title_pt: e.target.value })} required />
-          <TextInput label="Título (EN)" value={form.title_en} onChange={(e) => setForm({ ...form, title_en: e.target.value })} required />
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={form.id ? 'Editar treino' : 'Novo treino'}
+        subtitle="Só o que estiver publicado aparece para as alunas."
+        size="xl"
+        footer={
+          <>
+            <SubmitButton type="button" variant="secondary" block={false} onClick={() => setOpen(false)}>
+              Cancelar
+            </SubmitButton>
+            <SubmitButton form="form-treino" loading={saving} disabled={uploading} block={false}>
+              Salvar treino
+            </SubmitButton>
+          </>
+        }
+      >
+        <form id="form-treino" onSubmit={save}>
+          <FormSections>
+            <FormSection title="Identificação">
+              <FieldGrid>
+                <TextInput label="Título (PT)" value={form.title_pt} onChange={(e) => setForm({ ...form, title_pt: e.target.value })} required />
+                <TextInput label="Título (EN)" value={form.title_en} onChange={(e) => setForm({ ...form, title_en: e.target.value })} required />
+              </FieldGrid>
+              <FieldGrid>
+                <TextArea label="Descrição (PT)" value={form.description_pt} onChange={(e) => setForm({ ...form, description_pt: e.target.value })} />
+                <TextArea label="Descrição (EN)" value={form.description_en} onChange={(e) => setForm({ ...form, description_en: e.target.value })} />
+              </FieldGrid>
+            </FormSection>
 
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">Descrição (PT)</span>
-            <textarea
-              value={form.description_pt}
-              onChange={(e) => setForm({ ...form, description_pt: e.target.value })}
-              rows={2}
-              className="w-full rounded-lg border border-[var(--color-divider-dark)] px-3.5 py-2.5 text-sm"
-            />
-          </label>
+            <FormSection
+              title="Classificação"
+              description="Onde o treino aparece na biblioteca e qual plano precisa ter para assistir."
+            >
+              <FieldGrid>
+                <SelectInput
+                  label="Categoria"
+                  value={form.category_id}
+                  onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                >
+                  {cats.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name_pt}</option>
+                  ))}
+                </SelectInput>
+                <SelectInput
+                  label="Nível"
+                  value={form.level}
+                  onChange={(e) => setForm({ ...form, level: e.target.value as FitnessLevel })}
+                >
+                  {Object.entries(LEVEL_LABELS).map(([k, v]) => (
+                    <option key={k} value={k}>{v}</option>
+                  ))}
+                </SelectInput>
+              </FieldGrid>
+              <FieldGrid>
+                <TextInput label="Duração (min)" type="number" min={0} value={form.duration_min} onChange={(e) => setForm({ ...form, duration_min: Number(e.target.value) })} />
+                <SelectInput
+                  label="Plano mínimo"
+                  value={form.required_tier}
+                  onChange={(e) => setForm({ ...form, required_tier: Number(e.target.value) })}
+                >
+                  <option value={1}>1 — Básico</option>
+                  <option value={2}>2 — Premium</option>
+                  <option value={3}>3 — VIP</option>
+                </SelectInput>
+              </FieldGrid>
+            </FormSection>
 
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">Categoria</span>
-              <select
-                value={form.category_id}
-                onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-                className="w-full rounded-lg border border-[var(--color-divider-dark)] px-3 py-2.5 text-sm"
-              >
-                {cats.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name_pt}</option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">Nível</span>
-              <select
-                value={form.level}
-                onChange={(e) => setForm({ ...form, level: e.target.value as FitnessLevel })}
-                className="w-full rounded-lg border border-[var(--color-divider-dark)] px-3 py-2.5 text-sm"
-              >
-                {Object.entries(LEVEL_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <TextInput label="Duração (min)" type="number" value={form.duration_min} onChange={(e) => setForm({ ...form, duration_min: Number(e.target.value) })} />
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">Plano mínimo (tier)</span>
-              <select
-                value={form.required_tier}
-                onChange={(e) => setForm({ ...form, required_tier: Number(e.target.value) })}
-                className="w-full rounded-lg border border-[var(--color-divider-dark)] px-3 py-2.5 text-sm"
-              >
-                <option value={1}>1 — Básico</option>
-                <option value={2}>2 — Premium</option>
-                <option value={3}>3 — VIP</option>
-              </select>
-            </label>
-          </div>
-
-          {/* Vídeo do YouTube */}
-          <TextInput
-            label="Vídeo do YouTube (link ou ID) — opcional"
-            value={form.youtube_id}
-            onChange={(e) => setForm({ ...form, youtube_id: e.target.value })}
-            placeholder="https://youtu.be/XXXXXXXXXXX"
-          />
-          <p className="-mt-2 text-xs text-[var(--color-medium-grey)]">
-            Se preenchido, o treino usa o vídeo do YouTube. Senão, usa o arquivo enviado abaixo.
-          </p>
-
-          {/* Uploads */}
-          <div className="grid grid-cols-1 gap-3">
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">
-                Vídeo {form.video_path && !videoFile && <span className="text-green-600">✓ publicado</span>}
-              </span>
-              <input
-                type="file"
-                accept="video/*"
-                onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
-                className="text-sm"
+            <FormSection
+              title="Mídia"
+              description="Se houver link do YouTube, é ele que toca. Senão, toca o arquivo enviado."
+            >
+              <TextInput
+                label="Vídeo do YouTube (link ou ID)"
+                value={form.youtube_id}
+                onChange={(e) => setForm({ ...form, youtube_id: e.target.value })}
+                placeholder="https://youtu.be/XXXXXXXXXXX"
+                hint="Opcional."
               />
-              <span className="mt-1 block text-xs text-[var(--color-medium-grey)]">
-                O vídeo é convertido automaticamente no servidor (720p vertical, otimizado). Pode
-                enviar o arquivo original, sem limite de tamanho.
-              </span>
-              {videoFile && phase === 'idle' && (
-                <span className="mt-1 block text-xs text-[var(--color-black)]">
-                  Selecionado: {videoFile.name} ({(videoFile.size / 1048576).toFixed(0)} MB)
-                </span>
+
+              <FileField
+                label="Vídeo"
+                accept="video/*"
+                status={form.video_path && !videoFile ? 'publicado' : null}
+                selected={
+                  videoFile && phase === 'idle'
+                    ? `${videoFile.name} (${(videoFile.size / 1048576).toFixed(0)} MB)`
+                    : null
+                }
+                hint="Convertido automaticamente no servidor (720p vertical). Pode enviar o arquivo original, sem limite de tamanho."
+                onFile={setVideoFile}
+              />
+
+              <FileField
+                label="Thumbnail"
+                accept="image/*"
+                status={form.thumbnail_path ? 'enviada' : null}
+                hint="Imagem de capa do treino na biblioteca."
+                disabled={uploading}
+                onFile={(f) => handleFile('thumbnails', f)}
+              />
+
+              {uploading && (
+                <p className="flex items-center gap-2 text-sm text-[var(--color-medium-grey)]">
+                  <Loader2 className="animate-spin" size={14} /> Enviando arquivo…
+                </p>
               )}
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-[var(--color-black)]">
-                Thumbnail {form.thumbnail_path && <span className="text-green-600">✓ enviada</span>}
-              </span>
-              <input type="file" accept="image/*" onChange={(e) => handleFile('thumbnails', e.target.files?.[0] ?? null)} className="text-sm" />
-            </label>
-            {uploading && (
-              <p className="flex items-center gap-2 text-sm text-[var(--color-medium-grey)]">
-                <Loader2 className="animate-spin" size={14} /> Enviando arquivo…
-              </p>
-            )}
-          </div>
+            </FormSection>
 
-          <label className="flex items-center gap-2 text-sm text-[var(--color-black)]">
-            <input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} />
-            Publicado (visível para as alunas)
-          </label>
-
-          <SubmitButton loading={saving} disabled={uploading}>Salvar treino</SubmitButton>
+            <FormSection title="Publicação">
+              <CheckboxField
+                label="Publicado"
+                description="Visível para as alunas na biblioteca de treinos."
+                checked={form.published}
+                onChange={(v) => setForm({ ...form, published: v })}
+              />
+            </FormSection>
+          </FormSections>
         </form>
       </Modal>
 
