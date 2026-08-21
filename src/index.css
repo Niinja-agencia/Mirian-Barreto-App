@@ -14,8 +14,8 @@
     --color-divider: rgba(255, 255, 255, 0.1);
     --color-divider-dark: rgba(10, 10, 10, 0.1);
 
-    --font-display: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
-    --font-body: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+    --font-display: 'Poppins', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+    --font-body: 'Poppins', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
 
     --page-padding: clamp(16px, 4vw, 80px);
     --section-padding: clamp(80px, 12vh, 160px);
