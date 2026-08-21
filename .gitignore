@@ -23,7 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# Vídeos-fonte (pesados, não versionar)
+# Vï¿½deos-fonte (pesados, nï¿½o versionar)
 Videos/
 *.mp4
 *.HEIC
+
+# Cache do CLI do Supabase (versao baixada), nao e do projeto
+supabase/.temp/
