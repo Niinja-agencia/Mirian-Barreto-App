@@ -32,17 +32,27 @@ Projeto Supabase dedicado: **`fzpmypayekcpwvhapgsk`**.
 - **Confirmação de e-mail desligada** (`mailer_autoconfirm = true`), por decisão
   do dono, para o cadastro funcionar enquanto não houver SMTP. Religar assim que
   o SMTP existir: aí a conta volta a exigir e-mail verificado.
+- **Mercado Pago ligado e testado.** Aplicação `Mirian Barreto - App de Treinos`,
+  nº `2179171082009233`, com webhook apontando para `mp-webhook` e os eventos
+  *Planos e assinaturas* + *Pagamentos (legacy)*. Secrets `MP_ACCESS_TOKEN` e
+  `MP_WEBHOOK_SECRET` configurados. Testado com tráfego real: o Mercado Pago
+  entregou notificações assinadas e a função aceitou; assinatura mensal saiu a
+  R$ 69,90/mês e a anual a R$ 699,00 a cada 12 meses.
+- `APP_URL` corrigido para `https://www.mirianbarreto.com.br` (apontava para o
+  domínio da Vercel, e era ele que ia nos links dos e-mails e no retorno do
+  checkout). `EXTRA_ORIGINS` cobre o apex e o domínio Vercel.
 
 ### Falta você fazer
 
 | # | O que | Como |
 |---|-------|------|
-| 1 | Segredos do Mercado Pago | `supabase secrets set MP_ACCESS_TOKEN=… MP_WEBHOOK_SECRET=…` |
+| 1 | **Mover a integração para a conta da Mirian** | Ver seção 6.1. Hoje o dinheiro cai na conta da Niinja |
 | 2 | SMTP próprio + Resend | Authentication › Emails, e `supabase secrets set RESEND_API_KEY=… EMAIL_FROM=…`. Sem isso "esqueci minha senha" continua sem funcionar |
 | 3 | Deploy do front | `npm run build` + deploy na Vercel (o projeto está em outra conta Vercel, não dá para publicar daqui) |
 | 4 | Ligar o pg_cron | Database › Extensions › ativar `pg_cron` e `pg_net`, depois o SQL do item 7 |
 | 5 | Remover a função morta | `supabase functions delete video-url` |
 | 6 | Rotacionar a `service_role` | Settings › API. Atualizar depois no worker da VPS (`SUPABASE_SERVICE_ROLE`) |
+| 7 | Habilitar Pix na conta que vai receber | App do Mercado Pago: completar cadastro e registrar chave Pix. Ver seção 6.2 |
 
 ### Decisões de produto já tomadas
 
@@ -173,6 +183,51 @@ automaticamente pelo runtime das funções.)
    ```
    A função é *fail-closed*: sem `MP_WEBHOOK_SECRET` ela recusa toda notificação.
    Configure o segredo no mesmo momento em que ligar o `MP_ACCESS_TOKEN`.
+
+---
+
+### 6.1 Em qual conta o dinheiro cai
+
+O app é de **vendedor único**: existe um `MP_ACCESS_TOKEN` só, e toda cobrança —
+assinatura no cartão, Checkout Pro do avulso e Pix — é criada com ele. O dinheiro
+entra na conta dona desse token.
+
+Hoje o token é da conta da **Niinja** (`collector_id 2116223511`), não da Mirian.
+Isso precisa mudar **antes da primeira assinatura**: preapprovals ficam presos à
+conta que os criou, então mover depois obriga cada aluna a reassinar.
+
+O caminho que o Mercado Pago oferece para isso é o compartilhamento de
+credenciais — não existe tela de "conectar conta" dentro do painel do app:
+
+1. A Mirian cria a aplicação na conta **dela** (Pagamentos online › Assinaturas
+   com integração), configura o webhook para a mesma URL e ativa as credenciais
+   de produção.
+2. No painel do Mercado Pago da Niinja: **Integrações › Aplicações de outras
+   contas › Solicitar acesso**, informando o e-mail da conta dela.
+3. Ela aprova. A aplicação passa a aparecer nessa aba e as credenciais dela
+   ficam acessíveis para a integração — sem que ninguém entre na conta dela, e
+   ela pode revogar quando quiser.
+4. Trocar os dois secrets pelos valores da conta dela:
+   ```bash
+   supabase secrets set MP_ACCESS_TOKEN="APP_USR-…" MP_WEBHOOK_SECRET="…"
+   ```
+
+A alternativa (marketplace com `marketplace_fee`, em que a Niinja retém uma taxa
+automaticamente) **exige código que não existe**: fluxo OAuth, guardar o token
+dela e usar o campo de taxa. É construção, não configuração.
+
+### 6.2 Pix depende do cadastro da conta
+
+O checkout oferece Pix, mas ele só funciona se a conta que recebe tiver Pix
+habilitado. Na conta da Niinja hoje não tem: a API lista 10 métodos de pagamento
+e nenhum é `pix` (só `account_money`, `credit_card`, `debit_card`,
+`prepaid_card` e `ticket`), e o status de cobrança volta `allow: false` com o
+código `address_pending`.
+
+O sintoma no app é `create-checkout` respondendo 502 com o erro `13253 ·
+Financial Identity Use Case`, e a aluna vendo "Não foi possível iniciar o
+pagamento". Não é bug do código: é completar o cadastro no app do Mercado Pago e
+registrar uma chave Pix na conta que vai receber.
 
 ---
 
