@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, Check, Loader2, QrCode, CreditCard, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { brl } from '@/lib/format';
+import { brl, annualConfigured, annualSavings, type Billing } from '@/lib/format';
 import type { Plan, PaymentMethod } from '@/lib/database.types';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
@@ -16,6 +16,7 @@ interface PixResult {
 
 export default function Checkout() {
   const { slug } = useParams();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { currentLang } = useLanguage();
   const navigate = useNavigate();
@@ -23,6 +24,10 @@ export default function Checkout() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
   const [method, setMethod] = useState<PaymentMethod>('credit_card');
+  // O período vem da tela de planos (?billing=annual) e pode ser trocado aqui.
+  const [billing, setBilling] = useState<Billing>(
+    searchParams.get('billing') === 'annual' ? 'annual' : 'monthly'
+  );
   const [submitting, setSubmitting] = useState(false);
   const [pix, setPix] = useState<PixResult | null>(null);
 
@@ -48,7 +53,16 @@ export default function Checkout() {
   }
 
   const isAvulso = plan.slug === 'avulso';
-  const price = Number(plan.price_monthly);
+  // Anual só entra em cena quando o preço de 12 meses foi definido no painel.
+  // Sem isso, price_annual vem igual ao mensal e o app venderia um ano pelo
+  // preço de um mês.
+  const temAnual =
+    !isAvulso && annualConfigured(Number(plan.price_monthly), Number(plan.price_annual));
+  const periodo: Billing = temAnual && billing === 'annual' ? 'annual' : 'monthly';
+  const price = Number(periodo === 'annual' ? plan.price_annual : plan.price_monthly);
+  const economia = isAvulso
+    ? null
+    : annualSavings(Number(plan.price_monthly), Number(plan.price_annual));
   // Avulso é compra única; nos demais, cartão é recorrente e Pix é avulso.
   const isRecurring = method === 'credit_card' && !isAvulso;
 
@@ -57,7 +71,7 @@ export default function Checkout() {
     setSubmitting(true);
     setPix(null);
     const { data, error } = await supabase.functions.invoke('create-checkout', {
-      body: { plan_slug: plan!.slug, billing: 'monthly', method },
+      body: { plan_slug: plan!.slug, billing: periodo, method },
     });
     setSubmitting(false);
 
@@ -107,7 +121,7 @@ export default function Checkout() {
             <p className="mt-4 text-3xl font-bold">
               {brl(price)}
               <span className="text-sm font-normal text-[rgba(255,255,255,0.6)]">
-                {isAvulso ? ' único' : '/mês'}
+                {isAvulso ? ' único' : periodo === 'annual' ? '/ano' : '/mês'}
               </span>
             </p>
             <ul className="mt-6 space-y-2">
@@ -151,6 +165,31 @@ export default function Checkout() {
             ) : (
               <>
                 <h2 className="mb-5 font-semibold text-[var(--color-black)]">Pagamento</h2>
+
+                {/* Período — só quando existe preço anual de verdade */}
+                {temAnual && (
+                  <>
+                    <p className="mb-2 text-sm font-medium text-[var(--color-black)]">Período</p>
+                    <div className="mb-5 grid grid-cols-2 gap-3">
+                      <ToggleCard
+                        active={billing === 'monthly'}
+                        onClick={() => setBilling('monthly')}
+                        title="Mensal"
+                        subtitle={brl(Number(plan.price_monthly))}
+                      />
+                      <ToggleCard
+                        active={billing === 'annual'}
+                        onClick={() => setBilling('annual')}
+                        title="Anual"
+                        subtitle={
+                          economia
+                            ? `${brl(Number(plan.price_annual))} · ${economia.percentual}% off`
+                            : brl(Number(plan.price_annual))
+                        }
+                      />
+                    </div>
+                  </>
+                )}
 
                 {/* Método */}
                 <p className="mb-2 text-sm font-medium text-[var(--color-black)]">Forma de pagamento</p>

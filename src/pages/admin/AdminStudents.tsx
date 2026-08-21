@@ -2,15 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import Avatar from '@/components/Avatar';
 import { supabase } from '@/lib/supabase';
-import { formatDate, subscriptionStatusLabel, LEVEL_LABELS } from '@/lib/format';
+import { formatDate, subscriptionIsCurrent, subscriptionLabel, LEVEL_LABELS } from '@/lib/format';
 import type { Profile, Subscription, Plan } from '@/lib/database.types';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
 interface StudentRow extends Profile {
-  subscriptions: (Subscription & { plan: Pick<Plan, 'name_pt'> | null })[];
+  subscriptions: (Subscription & { plan: Pick<Plan, 'name_pt' | 'tier'> | null })[];
 }
-
-const ACTIVE = ['active', 'trialing'];
 
 export default function AdminStudents() {
   const [rows, setRows] = useState<StudentRow[]>([]);
@@ -21,7 +19,7 @@ export default function AdminStudents() {
     (async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('*, subscriptions(*, plan:plans(name_pt))')
+        .select('*, subscriptions(*, plan:plans(name_pt, tier))')
         .order('created_at', { ascending: false });
       setRows((data as unknown as StudentRow[]) ?? []);
       setLoading(false);
@@ -36,11 +34,20 @@ export default function AdminStudents() {
 
   if (loading) return <FullScreenLoader />;
 
+  // A assinatura que vale é a VIGENTE de maior tier — não simplesmente a mais
+  // recente. Cada clique em "Pagar" cria uma linha 'pending'; pela regra antiga
+  // uma aluna ativa que abrisse o checkout e desistisse aparecia como pendente.
+  // Sem nenhuma vigente, mostra a mais recente (para exibir vencida/cancelada).
   function currentSub(r: StudentRow) {
     const subs = [...(r.subscriptions ?? [])].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-    return subs[0] ?? null;
+    const vigentes = subs.filter(subscriptionIsCurrent);
+    const melhor = vigentes.reduce<(typeof subs)[number] | null>(
+      (best, s) => (!best || (s.plan?.tier ?? 0) > (best.plan?.tier ?? 0) ? s : best),
+      null
+    );
+    return melhor ?? subs[0] ?? null;
   }
 
   return (
@@ -71,7 +78,8 @@ export default function AdminStudents() {
           <tbody>
             {filtered.map((r) => {
               const sub = currentSub(r);
-              const isActive = sub && ACTIVE.includes(sub.status);
+              // Vigente = status ativo E período ainda válido (mesma regra do banco).
+              const isActive = subscriptionIsCurrent(sub);
               return (
                 <tr key={r.id} className="border-b border-[var(--color-divider-dark)] last:border-0">
                   <td className="px-4 py-3">
@@ -93,7 +101,7 @@ export default function AdminStudents() {
                         isActive ? 'bg-green-100 text-green-700' : 'bg-[var(--color-warm-grey)] text-[var(--color-medium-grey)]'
                       }`}
                     >
-                      {sub ? subscriptionStatusLabel(sub.status) : 'Sem plano'}
+                      {subscriptionLabel(sub)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-[var(--color-medium-grey)]">{formatDate(r.created_at)}</td>

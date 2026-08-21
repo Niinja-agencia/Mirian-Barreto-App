@@ -9,7 +9,7 @@ const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? '';
 
 Deno.serve(async (req) => {
-  if (CRON_SECRET && req.headers.get('x-cron-secret') !== CRON_SECRET) {
+  if (!CRON_SECRET || req.headers.get('x-cron-secret') !== CRON_SECRET) {
     return json({ error: 'forbidden' }, 403);
   }
 

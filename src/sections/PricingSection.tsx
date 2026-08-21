@@ -1,18 +1,37 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useLanguage } from '@/context/LanguageContext';
+import { supabase } from '@/lib/supabase';
+import { brl, annualConfigured, annualSavings, type Billing } from '@/lib/format';
 import { Check, Shield, XCircle } from 'lucide-react';
 
-const plans = [
+interface CardPlan {
+  id: string;
+  namePt: string;
+  nameEn: string;
+  descPt: string;
+  descEn: string;
+  priceMonthly: number;
+  priceAnnual: number;
+  featuresPt: string[];
+  featuresEn: string[];
+  highlighted: boolean;
+}
+
+// Preços e textos abaixo são só o primeiro quadro, enquanto o banco responde.
+// A fonte da verdade é a tabela `plans` — a mesma que o checkout cobra e que o
+// painel da Mirian edita. Antes esta lista era a única fonte: mudar o preço no
+// painel deixava a landing anunciando o valor antigo e cobrando o novo.
+const FALLBACK: CardPlan[] = [
   {
     id: 'avulso',
     namePt: 'Avulso',
     nameEn: 'Single',
     descPt: 'Experimente um treino',
     descEn: 'Try a single workout',
-    price: 'R$19,90',
-    pricePt: 'único',
-    priceEn: 'one-time',
+    priceMonthly: 19.90,
+    priceAnnual: 19.90,
     featuresPt: ['Apenas 1 treino / videoaula', 'Acesso imediato', 'Sem assinatura'],
     featuresEn: ['Just 1 workout / video class', 'Instant access', 'No subscription'],
     highlighted: false,
@@ -23,9 +42,8 @@ const plans = [
     nameEn: 'Basic',
     descPt: 'Perfeito para começar',
     descEn: 'Perfect to get started',
-    price: 'R$39,90',
-    pricePt: '/mês',
-    priceEn: '/mo',
+    priceMonthly: 39.90,
+    priceAnnual: 39.90,
     featuresPt: ['3 videoaulas', 'Treinos atualizados', 'Suporte via comunidade'],
     featuresEn: ['3 video classes', 'Updated workouts', 'Community support'],
     highlighted: false,
@@ -36,9 +54,8 @@ const plans = [
     nameEn: 'Premium',
     descPt: 'O favorito das alunas',
     descEn: "The students' favorite",
-    price: 'R$69,90',
-    pricePt: '/mês',
-    priceEn: '/mo',
+    priceMonthly: 69.90,
+    priceAnnual: 69.90,
     featuresPt: [
       'Acesso a todos os treinos',
       'Acompanhamento de progresso',
@@ -59,9 +76,8 @@ const plans = [
     nameEn: 'VIP',
     descPt: 'Para resultados acelerados',
     descEn: 'For accelerated results',
-    price: 'R$99,90',
-    pricePt: '/mês',
-    priceEn: '/mo',
+    priceMonthly: 99.90,
+    priceAnnual: 99.90,
     featuresPt: [
       'Tudo do Premium',
       'Consultoria nutricional mensal',
@@ -80,11 +96,66 @@ const plans = [
   },
 ];
 
-function PricingCard({ plan, index }: { plan: (typeof plans)[0]; index: number }) {
+/** Avulso é compra única; os demais seguem o período escolhido. */
+function sufixo(slug: string, billing: Billing) {
+  if (slug === 'avulso') return { pt: 'único', en: 'one-time' };
+  return billing === 'annual' ? { pt: '/ano', en: '/yr' } : { pt: '/mês', en: '/mo' };
+}
+
+function usePlanos(): CardPlan[] {
+  const [planos, setPlanos] = useState<CardPlan[]>(FALLBACK);
+
+  useEffect(() => {
+    let ativo = true;
+    (async () => {
+      const { data } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('active', true)
+        .order('sort_order');
+      if (!ativo || !data?.length) return;
+      setPlanos(
+        data.map((p) => ({
+          id: p.slug,
+          namePt: p.name_pt,
+          nameEn: p.name_en,
+          descPt: p.description_pt ?? '',
+          descEn: p.description_en ?? '',
+          priceMonthly: Number(p.price_monthly),
+          priceAnnual: Number(p.price_annual),
+          featuresPt: (p.features_pt as string[]) ?? [],
+          featuresEn: (p.features_en as string[]) ?? [],
+          highlighted: p.highlighted,
+        }))
+      );
+    })();
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  return planos;
+}
+
+function PricingCard({
+  plan,
+  index,
+  billing,
+}: {
+  plan: CardPlan;
+  index: number;
+  billing: Billing;
+}) {
   const { ref, isVisible } = useScrollReveal();
   const { currentLang } = useLanguage();
   const navigate = useNavigate();
   const isHighlighted = plan.highlighted;
+  const isAvulso = plan.id === 'avulso';
+  const temAnual = !isAvulso && annualConfigured(plan.priceMonthly, plan.priceAnnual);
+  const periodo: Billing = temAnual && billing === 'annual' ? 'annual' : 'monthly';
+  const valor = periodo === 'annual' ? plan.priceAnnual : plan.priceMonthly;
+  const suf = sufixo(plan.id, periodo);
+  const economia = isAvulso ? null : annualSavings(plan.priceMonthly, plan.priceAnnual);
 
   return (
     <div
@@ -119,14 +190,22 @@ function PricingCard({ plan, index }: { plan: (typeof plans)[0]; index: number }
           className={`font-bold leading-none ${isHighlighted ? 'text-white' : 'text-[var(--color-black)]'}`}
           style={{ fontSize: 'clamp(1.9rem, 3vw, 2.6rem)' }}
         >
-          {plan.price}
+          {brl(valor).replace(/\s/g, '')}
         </span>
         <span className={`text-sm ${isHighlighted ? 'text-[rgba(255,255,255,0.7)]' : 'text-[var(--color-medium-grey)]'}`}>
-          <span className="tr" data-pt={plan.pricePt} data-en={plan.priceEn}>
-            {currentLang === 'pt' ? plan.pricePt : plan.priceEn}
+          <span className="tr" data-pt={suf.pt} data-en={suf.en}>
+            {currentLang === 'pt' ? suf.pt : suf.en}
           </span>
         </span>
       </div>
+
+      {periodo === 'annual' && economia && (
+        <p className="mt-2 text-xs font-medium text-[var(--color-rose)]">
+          {currentLang === 'pt'
+            ? `Economia de ${brl(economia.economia)} por ano`
+            : `Save ${brl(economia.economia)} a year`}
+        </p>
+      )}
 
       <p className={`mt-2 text-sm ${isHighlighted ? 'text-[rgba(255,255,255,0.7)]' : 'text-[var(--color-medium-grey)]'}`}>
         {currentLang === 'pt' ? plan.descPt : plan.descEn}
@@ -146,7 +225,9 @@ function PricingCard({ plan, index }: { plan: (typeof plans)[0]; index: number }
       </ul>
 
       <button
-        onClick={() => navigate(`/checkout/${plan.id}`)}
+        onClick={() =>
+          navigate(`/checkout/${plan.id}${periodo === 'annual' ? '?billing=annual' : ''}`)
+        }
         className={`w-full py-3.5 uppercase tracking-[0.08em] text-sm font-medium transition-all duration-300 ${
           isHighlighted
             ? 'bg-[var(--color-rose)] text-[var(--color-black)] hover:bg-[var(--color-rose-hover)]'
@@ -163,6 +244,14 @@ function PricingCard({ plan, index }: { plan: (typeof plans)[0]; index: number }
 
 export default function PricingSection() {
   const { ref: headerRef, isVisible: headerVisible } = useScrollReveal();
+  const plans = usePlanos();
+  const [billing, setBilling] = useState<Billing>('monthly');
+  const { currentLang } = useLanguage();
+  // Só mostra o seletor se algum plano tiver desconto anual configurado;
+  // com anual == mensal ele não oferece nada e só polui a tela.
+  const temAnual = plans.some(
+    (p) => p.id !== 'avulso' && annualConfigured(p.priceMonthly, p.priceAnnual)
+  );
   return (
     <section
       id="planos"
@@ -188,9 +277,41 @@ export default function PricingSection() {
           </h2>
         </div>
 
+        {temAnual && (
+          <div className="mb-10 flex justify-center">
+            <div
+              className="inline-flex rounded-full p-1"
+              style={{ background: 'rgba(10,10,10,0.06)' }}
+              role="group"
+              aria-label={currentLang === 'pt' ? 'Período de cobrança' : 'Billing period'}
+            >
+              {(['monthly', 'annual'] as const).map((b) => (
+                <button
+                  key={b}
+                  onClick={() => setBilling(b)}
+                  aria-pressed={billing === b}
+                  className={`rounded-full px-6 py-2 text-xs font-medium uppercase tracking-[0.08em] transition-colors duration-300 ${
+                    billing === b
+                      ? 'bg-[var(--color-black)] text-white'
+                      : 'text-[var(--color-medium-grey)] hover:text-[var(--color-black)]'
+                  }`}
+                >
+                  {b === 'monthly'
+                    ? currentLang === 'pt'
+                      ? 'Mensal'
+                      : 'Monthly'
+                    : currentLang === 'pt'
+                      ? 'Anual'
+                      : 'Annual'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {plans.map((plan, index) => (
-            <PricingCard key={plan.id} plan={plan} index={index} />
+            <PricingCard key={plan.id} plan={plan} index={index} billing={billing} />
           ))}
         </div>
 

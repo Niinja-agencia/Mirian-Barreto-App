@@ -1,5 +1,6 @@
 import { useLanguage } from '@/context/LanguageContext';
 import { Instagram, Youtube, Phone, ArrowRight } from 'lucide-react';
+import { whatsappDisplay, whatsappLink } from '@/lib/contato';
 
 export default function Footer() {
   const { currentLang } = useLanguage();
@@ -77,7 +78,7 @@ export default function Footer() {
                 <Instagram size={24} strokeWidth={1.5} />
               </a>
               <a
-                href="https://wa.me/553141122199"
+                href={whatsappLink()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[var(--color-medium-grey)] hover:text-[var(--color-rose)] transition-colors duration-300"
@@ -97,7 +98,7 @@ export default function Footer() {
               @mirianbarretombb
             </p>
             <p className="uppercase tracking-[0.08em] text-xs font-medium text-[var(--color-medium-grey)] mt-1">
-              31 4112-2199
+              {whatsappDisplay()}
             </p>
           </div>
 

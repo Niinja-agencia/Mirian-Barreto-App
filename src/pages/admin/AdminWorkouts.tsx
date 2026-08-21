@@ -54,6 +54,7 @@ async function uploadTo(bucket: string, file: File): Promise<string> {
 export default function AdminWorkouts() {
   const [rows, setRows] = useState<Workout[]>([]);
   const [cats, setCats] = useState<WorkoutCategory[]>([]);
+  const [media, setMedia] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>({ ...empty });
@@ -65,12 +66,22 @@ export default function AdminWorkouts() {
   const [queuePos, setQueuePos] = useState<number | undefined>(undefined);
 
   async function load() {
-    const [{ data: w }, { data: c }] = await Promise.all([
+    const [{ data: w }, { data: c }, { data: m }] = await Promise.all([
       supabase.from('workouts').select('*').order('sort_order'),
       supabase.from('workout_categories').select('*').order('sort_order'),
+      // O youtube_id mora em workout_media (RLS valida plano na leitura da aluna).
+      supabase.from('workout_media').select('workout_id, youtube_id'),
     ]);
     setRows(w ?? []);
     setCats(c ?? []);
+    setMedia(
+      Object.fromEntries(
+        ((m ?? []) as { workout_id: string; youtube_id: string | null }[]).map((r) => [
+          r.workout_id,
+          r.youtube_id ?? '',
+        ])
+      )
+    );
     setLoading(false);
   }
   useEffect(() => {
@@ -95,7 +106,7 @@ export default function AdminWorkouts() {
       published: w.published,
       video_path: w.video_path,
       thumbnail_path: w.thumbnail_path,
-      youtube_id: w.youtube_id ?? '',
+      youtube_id: media[w.id] ?? '',
     });
     setOpen(true);
   }
@@ -132,7 +143,6 @@ export default function AdminWorkouts() {
       published: form.published,
       video_path: form.video_path,
       thumbnail_path: form.thumbnail_path,
-      youtube_id: youtubeId(form.youtube_id),
     };
     // 1. salva o treino (e obtém o id, necessário para enviar o vídeo)
     const { data: saved, error } = form.id
@@ -142,6 +152,16 @@ export default function AdminWorkouts() {
     if (error || !saved) {
       setSaving(false);
       return toast.error(error?.message ?? 'Erro ao salvar.');
+    }
+
+    // 1b. o link do YouTube vai para a tabela protegida, não para workouts.
+    const yt = youtubeId(form.youtube_id);
+    if (yt) {
+      await supabase
+        .from('workout_media')
+        .upsert({ workout_id: saved.id, youtube_id: yt }, { onConflict: 'workout_id' });
+    } else {
+      await supabase.from('workout_media').delete().eq('workout_id', saved.id);
     }
 
     // 2. se escolheu um vídeo, envia para a VPS (que converte automaticamente)

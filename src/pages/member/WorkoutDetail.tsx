@@ -22,6 +22,9 @@ export default function WorkoutDetail() {
   const [loading, setLoading] = useState(true);
   const [completed, setCompleted] = useState(false);
   const [saving, setSaving] = useState(false);
+  // O id do YouTube não vem mais junto com o treino: quem decide se a aluna
+  // pode vê-lo é o banco (RPC workout_youtube_id valida plano/publicação).
+  const [youtube, setYoutube] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -41,6 +44,10 @@ export default function WorkoutDetail() {
       setWorkout(w ?? null);
       setCompleted(!!prog);
       setLoading(false);
+
+      // Devolve null quando a aluna não tem direito — sem vazar o id do vídeo.
+      const { data: yt } = await supabase.rpc('workout_youtube_id', { p_workout_id: id });
+      setYoutube((yt as string | null) ?? null);
     })();
   }, [id, user]);
 
@@ -105,8 +112,8 @@ export default function WorkoutDetail() {
             Fazer upgrade
           </Link>
         </div>
-      ) : workout.youtube_id ? (
-        <YouTubeEmbed id={workout.youtube_id} />
+      ) : youtube ? (
+        <YouTubeEmbed id={youtube} />
       ) : (
         <ProtectedVideo workoutId={workout.id} title={title} artwork={thumbUrl(workout.thumbnail_path)} />
       )}

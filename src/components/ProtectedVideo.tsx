@@ -8,7 +8,7 @@ const VIDEO_HOST = import.meta.env.VITE_VIDEO_HOST as string;
 
 /**
  * Player protegido:
- * - URL assinada de curta duração via Edge Function 'video-url' (valida plano);
+ * - URL assinada de curta duração pelo worker da VPS (POST /sign, valida plano);
  * - sem download / menu de contexto; marca d'água com o e-mail da aluna;
  * - Wake Lock: a tela não apaga durante o treino;
  * - Media Session: controles na tela de bloqueio + áudio em background (Android);
@@ -43,18 +43,39 @@ export default function ProtectedVideo({
         if (active) setError('Sessão expirada. Entre novamente.');
         return;
       }
-      try {
-        const res = await fetch(`${VIDEO_HOST}/sign`, {
+      const pedirUrl = (jwt: string) =>
+        fetch(`${VIDEO_HOST}/sign`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ workout_id: workoutId }),
         });
+
+      try {
+        let res = await pedirUrl(token);
+
+        // 401 = o servidor não aceitou o token. Acontece quando a sessão
+        // guardada no navegador ficou para trás (aba aberta há horas, troca de
+        // dispositivo). Renova uma vez e tenta de novo antes de acusar erro —
+        // senão a aluna via "verifique se seu plano está ativo" com o plano em dia.
+        if (res.status === 401) {
+          const { data: renovada } = await supabase.auth.refreshSession();
+          const novoToken = renovada.session?.access_token;
+          if (!active) return;
+          if (!novoToken) {
+            setError('Sua sessão expirou. Entre novamente.');
+            return;
+          }
+          res = await pedirUrl(novoToken);
+        }
+
         if (!active) return;
         if (!res.ok) {
           setError(
             res.status === 403
               ? 'Este treino não está incluído no seu plano.'
-              : 'Não foi possível carregar o vídeo. Verifique se seu plano está ativo.'
+              : res.status === 401
+                ? 'Sua sessão expirou. Entre novamente.'
+                : 'Não foi possível carregar o vídeo. Verifique se seu plano está ativo.'
           );
           return;
         }

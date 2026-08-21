@@ -1,8 +1,12 @@
 // Inicia o pagamento no Mercado Pago.
-//  - planos mensais + cartão  -> assinatura recorrente (preapproval) -> init_point
-//  - avulso + cartão          -> pagamento único (Checkout Pro) -> init_point
-//  - qualquer plano + pix      -> pagamento único -> QR code
+//  - planos recorrentes + cartão -> preapproval (mensal ou anual) -> init_point
+//  - avulso + cartão             -> pagamento único (Checkout Pro) -> init_point
+//  - qualquer plano + pix        -> pagamento único -> QR code
 // Cria registros 'pending'; a liberação ocorre no webhook.
+//
+// O período vem do corpo da requisição ('monthly' | 'annual'). Antes o campo
+// era recebido e ignorado: o checkout cobrava sempre price_monthly, mesmo com
+// a tela oferecendo plano anual.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/cors.ts';
 
@@ -28,22 +32,43 @@ Deno.serve(async (req) => {
     } = await asUser.auth.getUser();
     if (!user) return json({ error: 'unauthorized' }, 401);
 
-    const { plan_slug, method } = await req.json();
+    const { plan_slug, method, billing: billingIn } = await req.json();
     if (!plan_slug || !method) return json({ error: 'parâmetros faltando' }, 400);
+
+    const billing: 'monthly' | 'annual' = billingIn === 'annual' ? 'annual' : 'monthly';
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
     const { data: plan } = await admin.from('plans').select('*').eq('slug', plan_slug).maybeSingle();
     if (!plan) return json({ error: 'plano não encontrado' }, 404);
 
-    const amount = Number(plan.price_monthly);
     const planName = plan.name_pt as string;
     const oneTime = plan.slug === 'avulso';
+
+    // price_annual é o valor CHEIO de 12 meses. O seed deixou a coluna igual ao
+    // mensal como marcador de "ainda não definido" — aceitar 'annual' nesse
+    // estado venderia um ano pelo preço de um mês. A tela já esconde a opção,
+    // mas a trava tem que estar aqui: o corpo da requisição vem do cliente.
+    const mensal = Number(plan.price_monthly);
+    const anual = Number(plan.price_annual);
+    const anualDisponivel = Number.isFinite(anual) && anual > mensal;
+
+    if (billing === 'annual' && !oneTime && !anualDisponivel) {
+      return json({ error: 'plano anual não configurado' }, 400);
+    }
+
+    // Avulso é compra única: não existe "anual" para ele.
+    const periodo: 'monthly' | 'annual' = oneTime ? 'monthly' : billing;
+    const meses = periodo === 'annual' ? 12 : 1;
+    const amount = periodo === 'annual' ? anual : mensal;
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return json({ error: 'preço do plano não configurado' }, 400);
+    }
 
     // ---------------- CARTÃO recorrente (planos mensais) ----------------
     if (method === 'credit_card' && !oneTime) {
       const { data: sub, error: subErr } = await admin
         .from('subscriptions')
-        .insert({ user_id: user.id, plan_id: plan.id, status: 'pending', billing: 'monthly' })
+        .insert({ user_id: user.id, plan_id: plan.id, status: 'pending', billing: periodo })
         .select('id')
         .single();
       if (subErr) return json({ error: subErr.message }, 500);
@@ -52,11 +77,17 @@ Deno.serve(async (req) => {
         method: 'POST',
         headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          reason: `Mirian Barreto — Plano ${planName} (mensal)`,
+          reason: `Mirian Barreto — Plano ${planName} (${periodo === 'annual' ? 'anual' : 'mensal'})`,
           external_reference: sub.id,
           payer_email: user.email,
           back_url: `${APP_URL}/app/assinatura`,
-          auto_recurring: { frequency: 1, frequency_type: 'months', transaction_amount: amount, currency_id: 'BRL' },
+          // O MP só aceita 'months' e 'days' — anual é 12 meses.
+          auto_recurring: {
+            frequency: meses,
+            frequency_type: 'months',
+            transaction_amount: amount,
+            currency_id: 'BRL',
+          },
           status: 'pending',
         }),
       });
@@ -96,7 +127,14 @@ Deno.serve(async (req) => {
     if (method === 'pix') {
       const { data: pay, error: payErr } = await admin
         .from('payments')
-        .insert({ user_id: user.id, plan_id: plan.id, amount, method: 'pix', status: 'pending', description: `Plano ${planName}` })
+        .insert({
+          user_id: user.id,
+          plan_id: plan.id,
+          amount,
+          method: 'pix',
+          status: 'pending',
+          description: `Plano ${planName}${oneTime ? '' : periodo === 'annual' ? ' (anual)' : ' (mensal)'}`,
+        })
         .select('id')
         .single();
       if (payErr) return json({ error: payErr.message }, 500);
@@ -114,7 +152,8 @@ Deno.serve(async (req) => {
           payment_method_id: 'pix',
           external_reference: pay.id,
           payer: { email: user.email },
-          metadata: { plan_id: plan.id, billing: oneTime ? 'once' : 'monthly', user_id: user.id },
+          // O webhook usa este metadata para saber quantos meses liberar.
+          metadata: { plan_id: plan.id, billing: oneTime ? 'once' : periodo, user_id: user.id },
         }),
       });
       const data = await res.json();

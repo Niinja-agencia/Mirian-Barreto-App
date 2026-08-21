@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSubscription } from '@/hooks/useSubscription';
-import { subscriptionStatusLabel, formatDuration, LEVEL_LABELS } from '@/lib/format';
+import { subscriptionLabel, formatDuration, LEVEL_LABELS } from '@/lib/format';
 import { thumbUrl } from '@/lib/storage';
 import type { Announcement, Workout } from '@/lib/database.types';
 
@@ -71,7 +71,7 @@ export default function Dashboard() {
               <p className="font-semibold">Você ainda não tem um plano ativo</p>
               <p className="text-sm text-[rgba(255,255,255,0.7)]">
                 {subscription
-                  ? `Status atual: ${subscriptionStatusLabel(subscription.status)}`
+                  ? `Status atual: ${subscriptionLabel(subscription)}`
                   : 'Escolha um plano para começar.'}
               </p>
             </div>

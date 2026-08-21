@@ -186,44 +186,9 @@ export default function TestimonialsSection() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
-          {stats.map((stat, index) => {
-            const { ref, isVisible } = useScrollReveal();
-            return (
-              <div
-                key={stat.labelPt}
-                ref={ref}
-                className={`text-center ${isVisible ? 'reveal-visible' : ''} reveal-pattern-a stagger-${index + 1}`}
-              >
-                <div
-                  className="text-white font-bold leading-none"
-                  style={{
-                    fontSize: 'clamp(2.5rem, 4vw, 3.5rem)',
-                    fontFamily: 'var(--font-body)',
-                  }}
-                >
-                  {stat.hasStars ? (
-                    <span>4.9</span>
-                  ) : (
-                    <AnimatedCounter
-                      target={stat.numericValue}
-                      isVisible={isVisible}
-                      prefix={stat.value.startsWith('+') ? '+' : ''}
-                      suffix={stat.suffix || ''}
-                    />
-                  )}
-                </div>
-                <div className="flex items-center justify-center gap-1 mt-2">
-                  {stat.hasStars &&
-                    [...Array(5)].map((_, i) => (
-                      <Star key={i} size={12} className="text-[var(--color-rose)]" fill="var(--color-rose)" />
-                    ))}
-                </div>
-                <p className="uppercase tracking-[0.12em] text-xs font-medium text-[var(--color-medium-grey)] mt-2">
-                  {currentLang === 'pt' ? stat.labelPt : stat.labelEn}
-                </p>
-              </div>
-            );
-          })}
+          {stats.map((stat, index) => (
+            <StatCard key={stat.labelPt} stat={stat} index={index} currentLang={currentLang} />
+          ))}
         </div>
       </div>
 
@@ -236,5 +201,56 @@ export default function TestimonialsSection() {
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * Um card de estatística.
+ *
+ * Existe como componente porque useScrollReveal() era chamado dentro do
+ * stats.map() — um callback. Hook em callback quebra a regra dos hooks: a
+ * ordem de chamada deixa de ser estável entre renders e o React perde o
+ * pareamento do estado. Cada card agora tem seu próprio ciclo de vida.
+ */
+function StatCard({
+  stat,
+  index,
+  currentLang,
+}: {
+  stat: (typeof stats)[number];
+  index: number;
+  currentLang: string;
+}) {
+  const { ref, isVisible } = useScrollReveal();
+  return (
+    <div
+      ref={ref}
+      className={`text-center ${isVisible ? 'reveal-visible' : ''} reveal-pattern-a stagger-${index + 1}`}
+    >
+      <div
+        className="text-white font-bold leading-none"
+        style={{ fontSize: 'clamp(2.5rem, 4vw, 3.5rem)', fontFamily: 'var(--font-body)' }}
+      >
+        {stat.hasStars ? (
+          <span>4.9</span>
+        ) : (
+          <AnimatedCounter
+            target={stat.numericValue}
+            isVisible={isVisible}
+            prefix={stat.value.startsWith('+') ? '+' : ''}
+            suffix={stat.suffix || ''}
+          />
+        )}
+      </div>
+      <div className="flex items-center justify-center gap-1 mt-2">
+        {stat.hasStars &&
+          [...Array(5)].map((_, i) => (
+            <Star key={i} size={12} className="text-[var(--color-rose)]" fill="var(--color-rose)" />
+          ))}
+      </div>
+      <p className="uppercase tracking-[0.12em] text-xs font-medium text-[var(--color-medium-grey)] mt-2">
+        {currentLang === 'pt' ? stat.labelPt : stat.labelEn}
+      </p>
+    </div>
   );
 }

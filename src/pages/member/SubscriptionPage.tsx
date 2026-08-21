@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSubscription } from '@/hooks/useSubscription';
-import { brl, formatDate, subscriptionStatusLabel } from '@/lib/format';
+import { brl, formatDate, subscriptionIsCurrent, subscriptionLabel, annualConfigured, type Billing } from '@/lib/format';
 import type { Plan } from '@/lib/database.types';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
@@ -16,6 +16,7 @@ export default function SubscriptionPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
   const [canceling, setCanceling] = useState(false);
+  const [billing, setBilling] = useState<Billing>('monthly');
 
   useEffect(() => {
     (async () => {
@@ -69,12 +70,16 @@ export default function SubscriptionPage() {
               </p>
               <p className="mt-1 text-sm text-[rgba(255,255,255,0.7)]">
                 {subscription.billing === 'monthly' ? 'Mensal' : 'Anual'} ·{' '}
-                {subscriptionStatusLabel(subscription.status)}
+                {subscriptionLabel(subscription)}
               </p>
             </div>
             <div className="text-right">
               <p className="text-sm text-[rgba(255,255,255,0.6)]">
-                {subscription.cancel_at_period_end ? 'Acesso até' : 'Próxima renovação'}
+                {!subscriptionIsCurrent(subscription)
+                  ? 'Venceu em'
+                  : subscription.cancel_at_period_end
+                    ? 'Acesso até'
+                    : 'Próxima renovação'}
               </p>
               <p className="text-lg font-semibold">{formatDate(subscription.current_period_end)}</p>
             </div>
@@ -100,9 +105,37 @@ export default function SubscriptionPage() {
 
       {/* Planos disponíveis */}
       <div>
-        <h2 className="mb-4 text-lg font-semibold text-[var(--color-black)]">
-          {active ? 'Mudar de plano' : 'Escolha seu plano'}
-        </h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-[var(--color-black)]">
+            {active ? 'Mudar de plano' : 'Escolha seu plano'}
+          </h2>
+
+          {/* Só aparece se algum plano tiver desconto anual configurado. */}
+          {plans.some(
+            (p) => p.slug !== 'avulso' && annualConfigured(p.price_monthly, p.price_annual)
+          ) && (
+            <div
+              className="inline-flex rounded-full bg-[var(--color-warm-grey)] p-1"
+              role="group"
+              aria-label="Período de cobrança"
+            >
+              {(['monthly', 'annual'] as const).map((b) => (
+                <button
+                  key={b}
+                  onClick={() => setBilling(b)}
+                  aria-pressed={billing === b}
+                  className={`rounded-full px-4 py-1.5 text-xs font-medium uppercase tracking-[0.06em] transition-colors ${
+                    billing === b
+                      ? 'bg-[var(--color-black)] text-white'
+                      : 'text-[var(--color-medium-grey)] hover:text-[var(--color-black)]'
+                  }`}
+                >
+                  {b === 'monthly' ? 'Mensal' : 'Anual'}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {plans.map((plan) => {
             const isCurrent = subscription?.plan_id === plan.id && active;
@@ -121,8 +154,21 @@ export default function SubscriptionPage() {
                   {currentLang === 'pt' ? plan.name_pt : plan.name_en}
                 </p>
                 <p className="mt-2 text-3xl font-bold text-[var(--color-black)]">
-                  {brl(plan.price_monthly)}
-                  <span className="text-sm font-normal text-[var(--color-medium-grey)]">/mês</span>
+                  {/* Avulso é compra única — mesma regra do checkout e da landing. */}
+                  {(() => {
+                    const anual =
+                      plan.slug !== 'avulso' &&
+                      billing === 'annual' &&
+                      annualConfigured(plan.price_monthly, plan.price_annual);
+                    return (
+                      <>
+                        {brl(anual ? plan.price_annual : plan.price_monthly)}
+                        <span className="text-sm font-normal text-[var(--color-medium-grey)]">
+                          {plan.slug === 'avulso' ? ' único' : anual ? '/ano' : '/mês'}
+                        </span>
+                      </>
+                    );
+                  })()}
                 </p>
                 <ul className="mt-4 flex-1 space-y-2">
                   {features.map((f) => (
@@ -134,7 +180,16 @@ export default function SubscriptionPage() {
                 </ul>
                 <button
                   disabled={isCurrent}
-                  onClick={() => navigate(`/checkout/${plan.slug}`)}
+                  onClick={() =>
+                    navigate(
+                      `/checkout/${plan.slug}` +
+                        (plan.slug !== 'avulso' &&
+                        billing === 'annual' &&
+                        annualConfigured(plan.price_monthly, plan.price_annual)
+                          ? '?billing=annual'
+                          : '')
+                    )
+                  }
                   className="mt-6 w-full rounded-lg bg-[var(--color-rose)] py-2.5 text-sm font-semibold uppercase tracking-[0.06em] text-white transition-colors hover:bg-[var(--color-rose-hover)] disabled:cursor-default disabled:bg-[var(--color-warm-grey)] disabled:text-[var(--color-medium-grey)]"
                 >
                   {isCurrent ? 'Plano atual' : plan.tier > tier ? 'Assinar' : 'Mudar para este'}

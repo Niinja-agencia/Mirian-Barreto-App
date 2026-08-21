@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Users, CreditCard, DollarSign, Dumbbell } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { brl, formatDate, subscriptionStatusLabel } from '@/lib/format';
+import { brl, formatDate, paymentMethodLabel, paymentStatusLabel } from '@/lib/format';
 import type { Plan, Subscription, Payment } from '@/lib/database.types';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
@@ -119,7 +119,9 @@ export default function AdminDashboard() {
                       {p.profile?.full_name ?? '—'}
                     </td>
                     <td className="px-4 py-3 text-[var(--color-black)]">{brl(Number(p.amount))}</td>
-                    <td className="px-4 py-3 text-[var(--color-medium-grey)]">{p.method}</td>
+                    <td className="px-4 py-3 text-[var(--color-medium-grey)]">
+                      {paymentMethodLabel(p.method)}
+                    </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={p.status} />
                     </td>
@@ -163,7 +165,7 @@ function StatusBadge({ status }: { status: string }) {
         ok ? 'bg-green-100 text-green-700' : 'bg-[var(--color-warm-grey)] text-[var(--color-medium-grey)]'
       }`}
     >
-      {subscriptionStatusLabel(status) === status ? status : subscriptionStatusLabel(status)}
+      {paymentStatusLabel(status)}
     </span>
   );
 }

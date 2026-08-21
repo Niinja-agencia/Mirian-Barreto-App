@@ -151,8 +151,11 @@ export default function HeroSection() {
               className="cta-btn bg-[var(--color-rose)] text-[var(--color-black)] uppercase tracking-[0.08em] text-sm font-medium px-8 py-4 text-center"
               aria-label="Começar agora"
             >
-              <span className="tr" data-pt="Comece Agora — R$29/mês" data-en="Start Now — $9/mo">
-                Comece Agora — R$29/mês
+              {/* Sem preço aqui de propósito: R$29/mês não era nenhum plano
+                  (o mais barato mensal é o Básico). Os valores reais ficam
+                  logo abaixo, na seção Planos, vindos do banco. */}
+              <span className="tr" data-pt="Comece Agora" data-en="Start Now">
+                Comece Agora
               </span>
             </button>
             <button

@@ -11,7 +11,7 @@ export type UserRole = 'aluno' | 'admin';
 export type FitnessLevel = 'iniciante' | 'intermediario' | 'avancado';
 export type BillingInterval = 'monthly' | 'annual';
 export type SubscriptionStatus =
-  | 'pending' | 'trialing' | 'active' | 'past_due' | 'canceled';
+  | 'pending' | 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired';
 export type PaymentStatus =
   | 'pending' | 'approved' | 'rejected' | 'refunded' | 'canceled' | 'charged_back';
 export type PaymentMethod = 'pix' | 'credit_card' | 'boleto';
@@ -124,6 +124,14 @@ export type Announcement = {
   created_at: string;
 };
 
+// Onde o youtube_id passou a morar: fora de `workouts`, com RLS que valida o
+// plano. Antes ele vinha junto no select do treino e o bloqueio era só visual.
+export type WorkoutMedia = {
+  workout_id: string;
+  youtube_id: string | null;
+  updated_at: string;
+};
+
 // Helper de tabela no formato esperado pelo supabase-js (GenericTable).
 // Row é tipado nas leituras; Insert/Update aceitam payloads parciais.
 type T<Row extends Record<string, unknown>> = {
@@ -142,6 +150,7 @@ export type Database = {
       payments: T<Payment>;
       workout_categories: T<WorkoutCategory>;
       workouts: T<Workout>;
+      workout_media: T<WorkoutMedia>;
       workout_progress: T<WorkoutProgress>;
       announcements: T<Announcement>;
     };
@@ -149,6 +158,7 @@ export type Database = {
     Functions: {
       current_tier: { Args: { uid: string }; Returns: number };
       is_admin: { Args: { uid: string }; Returns: boolean };
+      workout_youtube_id: { Args: { p_workout_id: string }; Returns: string | null };
     };
     Enums: {
       user_role: UserRole;

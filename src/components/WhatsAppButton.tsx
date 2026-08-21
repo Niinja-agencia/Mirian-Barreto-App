@@ -1,7 +1,5 @@
 import { useLanguage } from '@/context/LanguageContext';
-
-// Número da Mirian (formato internacional, só dígitos). Mesmo usado no Footer.
-const PHONE_NUMBER = '553141122199';
+import { whatsappLink } from '@/lib/contato';
 
 const MESSAGES = {
   pt: 'Olá! Quero saber mais sobre os treinos com a Mirian.',
@@ -10,8 +8,7 @@ const MESSAGES = {
 
 export default function WhatsAppButton() {
   const { currentLang } = useLanguage();
-  const text = encodeURIComponent(MESSAGES[currentLang]);
-  const href = `https://wa.me/${PHONE_NUMBER}?text=${text}`;
+  const href = whatsappLink(MESSAGES[currentLang]);
   const aria =
     currentLang === 'pt' ? 'Falar no WhatsApp' : 'Chat on WhatsApp';
 

@@ -37,9 +37,12 @@ Deno.serve(async (req) => {
     if (!sub) return json({ error: 'assinatura não encontrada' }, 404);
     if (sub.user_id !== user.id) return json({ error: 'forbidden' }, 403);
 
-    // Cancela a cobrança recorrente no MP (se houver)
+    // Cancela a cobrança recorrente no MP (se houver).
+    // A resposta PRECISA ser conferida: antes o retorno era ignorado, então uma
+    // falha no MP marcava a assinatura como cancelada no nosso banco enquanto o
+    // cartão da aluna continuava sendo cobrado todo mês.
     if (sub.mp_preapproval_id) {
-      await fetch(`${MP}/preapproval/${sub.mp_preapproval_id}`, {
+      const mpRes = await fetch(`${MP}/preapproval/${sub.mp_preapproval_id}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
@@ -47,6 +50,12 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({ status: 'cancelled' }),
       });
+      if (!mpRes.ok) {
+        const detail = await mpRes.text();
+        console.error('MP recusou o cancelamento', mpRes.status, detail.slice(0, 300));
+        // Não marca como cancelada: a cobrança continua ativa lá.
+        return json({ error: 'mp_cancel_failed' }, 502);
+      }
     }
 
     await admin

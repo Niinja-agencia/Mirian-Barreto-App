@@ -16,8 +16,22 @@ interface Tpl {
   html: string;
 }
 
+/**
+ * Escapa texto vindo do usuário antes de entrar no HTML do e-mail.
+ * O full_name é preenchido no cadastro; sem isto dava para injetar link de
+ * phishing num e-mail saindo do domínio da Mirian.
+ */
+function esc(v: unknown): string {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function render(template: string, p: Record<string, unknown>): Tpl {
-  const name = (p.name as string) ?? 'aluna';
+  const name = esc(p.name ?? 'aluna');
   const wrap = (inner: string) =>
     `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#0A0A0A">
        ${inner}
@@ -40,7 +54,7 @@ function render(template: string, p: Record<string, unknown>): Tpl {
         subject: 'Pagamento confirmado ✅',
         html: wrap(
           `<h2>Pagamento confirmado!</h2>
-           <p>Recebemos seu pagamento${p.amount ? ` de R$ ${p.amount}` : ''}. Acesso liberado.</p>
+           <p>Recebemos seu pagamento${p.amount ? ` de R$ ${esc(p.amount)}` : ''}. Acesso liberado.</p>
            <p><a href="${APP_URL}/app">Ir para o app</a></p>`
         ),
       };
@@ -49,7 +63,7 @@ function render(template: string, p: Record<string, unknown>): Tpl {
         subject: 'Sua assinatura vai renovar em breve',
         html: wrap(
           `<h2>Olá, ${name}!</h2>
-           <p>Sua assinatura ${p.plan ? `(${p.plan}) ` : ''}renova em ${p.date ?? 'breve'}.</p>
+           <p>Sua assinatura ${p.plan ? `(${esc(p.plan)}) ` : ''}renova em ${esc(p.date ?? 'breve')}.</p>
            <p>Se quiser ajustar ou cancelar, acesse <a href="${APP_URL}/app/assinatura">sua assinatura</a>.</p>`
         ),
       };
@@ -68,7 +82,7 @@ function render(template: string, p: Record<string, unknown>): Tpl {
 }
 
 Deno.serve(async (req) => {
-  if (CRON_SECRET && req.headers.get('x-cron-secret') !== CRON_SECRET) {
+  if (!CRON_SECRET || req.headers.get('x-cron-secret') !== CRON_SECRET) {
     return json({ error: 'forbidden' }, 403);
   }
 

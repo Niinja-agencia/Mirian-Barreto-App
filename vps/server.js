@@ -33,19 +33,48 @@ fs.mkdirSync(TMP_DIR, { recursive: true });
 
 const app = express();
 app.use(express.json());
-// CORS (o site chama daqui)
+
+// CORS restrito às origens do app. Era '*', o que permitia a qualquer site
+// chamar /sign com o token de uma aluna logada e obter a URL do vídeo.
+// APP_ORIGINS aceita lista separada por vírgula.
+const ALLOWED_ORIGINS = new Set(
+  (process.env.APP_ORIGINS || 'https://mirian-barreto-app.vercel.app,http://localhost:3000')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+);
 app.use((req, res, next) => {
-  res.set('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.set('Access-Control-Allow-Origin', origin);
+    res.set('Vary', 'Origin');
+  }
   res.set('Access-Control-Allow-Headers', 'authorization, content-type');
   res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
 
+// Só aceita uuid como nome de arquivo de saída. Sem isto, o workout_id vinha
+// cru do corpo da requisição para dentro de path.join(VIDEO_DIR, ...).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const upload = multer({ dest: TMP_DIR, limits: { fileSize: 8 * 1024 * 1024 * 1024 } }); // 8 GB
 
 // Fila de conversão: só 1 FFmpeg por vez (a VPS é compartilhada com outros serviços)
 const jobs = new Map(); // jobId -> { status: queued|processing|done|error, workoutId, position?, error? }
+
+// O Map nunca era limpo: cada upload deixava uma entrada para sempre.
+// Jobs encerrados somem depois de 6h (tempo de sobra para o painel consultar).
+const JOB_TTL_MS = 6 * 60 * 60 * 1000;
+setInterval(() => {
+  const limite = Date.now() - JOB_TTL_MS;
+  for (const [id, job] of jobs) {
+    if ((job.status === 'done' || job.status === 'error') && (job.finishedAt ?? 0) < limite) {
+      jobs.delete(id);
+    }
+  }
+}, 30 * 60 * 1000).unref();
 const queue = []; // [{ jobId, inputPath, workoutId }]
 let running = false;
 
@@ -123,11 +152,14 @@ async function processJob(jobId, inputPath, workoutId) {
   const output = path.join(VIDEO_DIR, `${workoutId}.mp4`);
   try {
     await transcode(inputPath, output);
-    await db.from('workouts').update({ video_path: `${workoutId}.mp4`, youtube_id: null }).eq('id', workoutId);
-    jobs.set(jobId, { status: 'done', workoutId, size: fs.statSync(output).size });
+    await db.from('workouts').update({ video_path: `${workoutId}.mp4` }).eq('id', workoutId);
+    // O treino passa a usar o arquivo hospedado: descarta o YouTube, que agora
+    // vive em workout_media (e não mais na coluna workouts.youtube_id).
+    await db.from('workout_media').delete().eq('workout_id', workoutId);
+    jobs.set(jobId, { status: 'done', workoutId, size: fs.statSync(output).size, finishedAt: Date.now() });
     console.log(`[job ${jobId}] pronto -> ${output}`);
   } catch (e) {
-    jobs.set(jobId, { status: 'error', workoutId, error: String(e.message || e) });
+    jobs.set(jobId, { status: 'error', workoutId, error: String(e.message || e), finishedAt: Date.now() });
     console.error(`[job ${jobId}] erro:`, e.message);
   } finally {
     fs.rm(inputPath, { force: true }, () => {});
@@ -148,6 +180,10 @@ app.get('/health', (_req, res) =>
 app.post('/upload', requireAdmin, upload.single('video'), async (req, res) => {
   const workoutId = req.body.workout_id;
   if (!workoutId || !req.file) return res.status(400).json({ error: 'workout_id e video obrigatorios' });
+  if (!UUID_RE.test(workoutId)) {
+    fs.rm(req.file.path, { force: true }, () => {});
+    return res.status(400).json({ error: 'workout_id invalido' });
+  }
   const jobId = crypto.randomUUID();
   enqueue(jobId, req.file.path, workoutId); // converte 1 por vez
   res.status(202).json({ job_id: jobId, queued: queue.length });
