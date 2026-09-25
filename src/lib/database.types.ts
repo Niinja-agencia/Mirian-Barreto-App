@@ -113,6 +113,19 @@ export type WorkoutProgress = {
   completed_at: string;
 };
 
+export type BodyProgress = {
+  id: string;
+  user_id: string;
+  recorded_on: string;
+  weight_kg: number | null;
+  waist_cm: number | null;
+  hip_cm: number | null;
+  thigh_cm: number | null;
+  photo_path: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
 export type Announcement = {
   id: string;
   title_pt: string;
@@ -152,6 +165,7 @@ export type Database = {
       workouts: T<Workout>;
       workout_media: T<WorkoutMedia>;
       workout_progress: T<WorkoutProgress>;
+      body_progress: T<BodyProgress>;
       announcements: T<Announcement>;
     };
     Views: Record<never, never>;

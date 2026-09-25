@@ -30,6 +30,7 @@ export default function Checkout() {
   );
   const [submitting, setSubmitting] = useState(false);
   const [pix, setPix] = useState<PixResult | null>(null);
+  const [pixPaymentId, setPixPaymentId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -39,6 +40,25 @@ export default function Checkout() {
       setLoading(false);
     })();
   }, [slug]);
+
+  useEffect(() => {
+    if (!pixPaymentId) return;
+    const timer = window.setInterval(async () => {
+      const { data } = await supabase.from('payments').select('status')
+        .eq('mp_payment_id', pixPaymentId).maybeSingle();
+      if (data?.status === 'approved') {
+        window.clearInterval(timer);
+        toast.success('Pagamento confirmado! Seus treinos foram liberados.');
+        navigate('/app/assinatura', { replace: true });
+      } else if (data && ['rejected', 'canceled', 'refunded', 'charged_back'].includes(data.status)) {
+        window.clearInterval(timer);
+        toast.error('O pagamento não foi aprovado. Tente novamente.');
+        setPix(null);
+        setPixPaymentId(null);
+      }
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [pixPaymentId, navigate]);
 
   if (loading) return <FullScreenLoader />;
   if (!plan) {
@@ -70,6 +90,7 @@ export default function Checkout() {
     if (!user) return;
     setSubmitting(true);
     setPix(null);
+    setPixPaymentId(null);
     const { data, error } = await supabase.functions.invoke('create-checkout', {
       body: { plan_slug: plan!.slug, billing: periodo, method },
     });
@@ -85,6 +106,7 @@ export default function Checkout() {
     }
     if (data.pix) {
       setPix(data.pix as PixResult);
+      setPixPaymentId(data.payment_id ? String(data.payment_id) : null);
       return;
     }
     toast.error('Resposta de pagamento inesperada.');

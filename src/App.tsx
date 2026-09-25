@@ -30,6 +30,7 @@ const AdminWorkouts = lazy(() => import('@/pages/admin/AdminWorkouts'));
 const AdminCategories = lazy(() => import('@/pages/admin/AdminCategories'));
 const AdminPlans = lazy(() => import('@/pages/admin/AdminPlans'));
 const AdminStudents = lazy(() => import('@/pages/admin/AdminStudents'));
+const AdminStudentProgress = lazy(() => import('@/pages/admin/AdminStudentProgress'));
 const AdminAnnouncements = lazy(() => import('@/pages/admin/AdminAnnouncements'));
 const AdminPayments = lazy(() => import('@/pages/admin/AdminPayments'));
 
@@ -50,7 +51,7 @@ function App() {
             <Route
               path="/checkout/:slug"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute signupFirst>
                   <Checkout />
                 </ProtectedRoute>
               }
@@ -87,6 +88,7 @@ function App() {
               <Route path="categorias" element={<AdminCategories />} />
               <Route path="planos" element={<AdminPlans />} />
               <Route path="alunas" element={<AdminStudents />} />
+              <Route path="alunas/:id" element={<AdminStudentProgress />} />
               <Route path="avisos" element={<AdminAnnouncements />} />
               <Route path="pagamentos" element={<AdminPayments />} />
             </Route>

@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
 
     const { plan_slug, method, billing: billingIn } = await req.json();
     if (!plan_slug || !method) return json({ error: 'parâmetros faltando' }, 400);
+    if (!['credit_card', 'pix'].includes(method)) return json({ error: 'método inválido' }, 400);
 
     const billing: 'monthly' | 'annual' = billingIn === 'annual' ? 'annual' : 'monthly';
 
@@ -47,7 +48,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: plan } = await admin.from('plans').select('*').eq('slug', plan_slug).maybeSingle();
-    if (!plan) return json({ error: 'plano não encontrado' }, 404);
+    if (!plan || !plan.active) return json({ error: 'plano não encontrado' }, 404);
 
     const planName = plan.name_pt as string;
     const oneTime = plan.slug === 'avulso';
@@ -76,7 +77,7 @@ Deno.serve(async (req) => {
     if (method === 'credit_card' && !oneTime) {
       const { data: sub, error: subErr } = await admin
         .from('subscriptions')
-        .insert({ user_id: user.id, plan_id: plan.id, status: 'pending', billing: periodo })
+        .insert({ user_id: user.id, plan_id: plan.id, status: 'pending', billing: periodo, agreed_amount: amount })
         .select('id')
         .single();
       if (subErr) return json({ error: subErr.message }, 500);
@@ -109,7 +110,7 @@ Deno.serve(async (req) => {
     if (method === 'credit_card' && oneTime) {
       const { data: pay, error: payErr } = await admin
         .from('payments')
-        .insert({ user_id: user.id, plan_id: plan.id, amount, method: 'credit_card', status: 'pending', description: `Avulso — ${planName}` })
+        .insert({ user_id: user.id, plan_id: plan.id, amount, method: 'credit_card', status: 'pending', billing_context: 'once', description: `Avulso — ${planName}` })
         .select('id')
         .single();
       if (payErr) return json({ error: payErr.message }, 500);
@@ -141,6 +142,7 @@ Deno.serve(async (req) => {
           amount,
           method: 'pix',
           status: 'pending',
+          billing_context: oneTime ? 'once' : periodo,
           description: `Plano ${planName}${oneTime ? '' : periodo === 'annual' ? ' (anual)' : ' (mensal)'}`,
         })
         .select('id')
