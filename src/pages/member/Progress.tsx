@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { formatDate } from '@/lib/format';
 import { measurements, withSignedPhotos, type ProgressWithPhoto } from '@/lib/bodyProgress';
 import type { BodyProgress, Workout } from '@/lib/database.types';
@@ -14,7 +15,7 @@ import FullScreenLoader from '@/components/FullScreenLoader';
 interface WorkoutRow {
   workout_id: string;
   completed_at: string;
-  workout: Pick<Workout, 'title_pt' | 'title_en'> | null;
+  workout: Pick<Workout, 'title_pt' | 'title_en' | 'required_tier'> | null;
 }
 type MeasureKey = typeof measurements[number]['key'];
 const emptyMeasures: Record<MeasureKey, string> = {
@@ -24,6 +25,7 @@ const emptyMeasures: Record<MeasureKey, string> = {
 export default function Progress() {
   const { user } = useAuth();
   const { currentLang } = useLanguage();
+  const { tier, loading: subscriptionLoading } = useSubscription();
   const [workouts, setWorkouts] = useState<WorkoutRow[]>([]);
   const [entries, setEntries] = useState<ProgressWithPhoto[]>([]);
   const [available, setAvailable] = useState(0);
@@ -36,12 +38,13 @@ export default function Progress() {
   const photoInput = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
-    if (!user) return;
+    if (!user || subscriptionLoading) return;
     const [workoutsRes, availableRes, progressRes] = await Promise.all([
       supabase.from('workout_progress')
-        .select('workout_id, completed_at, workout:workouts(title_pt, title_en)')
+        .select('workout_id, completed_at, workout:workouts(title_pt, title_en, required_tier)')
         .eq('user_id', user.id).order('completed_at', { ascending: false }),
-      supabase.from('workouts').select('*', { count: 'exact', head: true }).eq('published', true),
+      supabase.from('workouts').select('*', { count: 'exact', head: true })
+        .eq('published', true).lte('required_tier', tier),
       supabase.from('body_progress').select('*').eq('user_id', user.id)
         .order('recorded_on', { ascending: false }).order('created_at', { ascending: false }),
     ]);
@@ -50,7 +53,7 @@ export default function Progress() {
     setAvailable(availableRes.count ?? 0);
     setEntries(await withSignedPhotos((progressRes.data as BodyProgress[]) ?? []));
     setLoading(false);
-  }, [user]);
+  }, [user, tier, subscriptionLoading]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -106,7 +109,7 @@ export default function Progress() {
   }
 
   if (loading) return <FullScreenLoader />;
-  const done = workouts.length;
+  const done = workouts.filter((row) => row.workout && row.workout.required_tier <= tier).length;
   const pct = available > 0 ? Math.round((done / available) * 100) : 0;
 
   return (
@@ -114,7 +117,7 @@ export default function Progress() {
       <h1 className="text-3xl font-semibold text-[var(--color-black)]" style={{ fontFamily: 'var(--font-display)' }}>Meu progresso</h1>
       <div className="rounded-2xl border border-[var(--color-divider-dark)] bg-white p-6">
         <div className="flex items-end justify-between">
-          <div><p className="text-3xl font-bold">{done}</p><p className="text-sm text-[var(--color-medium-grey)]">de {available} treinos concluídos</p></div>
+          <div><p className="text-3xl font-bold">{done}</p><p className="text-sm text-[var(--color-medium-grey)]">de {available} treinos do seu plano concluídos</p></div>
           <p className="text-2xl font-bold text-[var(--color-rose)]">{pct}%</p>
         </div>
         <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-[var(--color-warm-grey)]">
@@ -179,7 +182,7 @@ export default function Progress() {
 
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">Treinos concluídos</h2>
-        {done === 0 ? <p className="rounded-2xl bg-white p-6 text-[var(--color-medium-grey)]">
+        {workouts.length === 0 ? <p className="rounded-2xl bg-white p-6 text-[var(--color-medium-grey)]">
           Você ainda não concluiu nenhum treino. <Link to="/app/treinos" className="text-[var(--color-rose)]">Começar agora</Link>
         </p> : <ul className="divide-y divide-[var(--color-divider-dark)] overflow-hidden rounded-2xl bg-white">
           {workouts.map((row) => <li key={row.workout_id}>

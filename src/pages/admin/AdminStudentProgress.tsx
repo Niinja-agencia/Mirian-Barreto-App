@@ -48,10 +48,12 @@ export default function AdminStudentProgress() {
   if (loading) return <FullScreenLoader />;
   if (error || !profile) return <p className="text-red-700">{error ?? 'Aluna não encontrada.'}</p>;
 
-  const first = entries[entries.length - 1];
-  const latest = entries[0];
-  const weightChange = first?.weight_kg != null && latest?.weight_kg != null && first.id !== latest.id
-    ? Number(latest.weight_kg) - Number(first.weight_kg) : null;
+  const weights = entries.filter((entry) => entry.weight_kg != null);
+  const firstWeight = weights[weights.length - 1];
+  const latestWeight = weights[0];
+  const latestMeasures = entries.find((entry) => measurements.some(({ key }) => entry[key] != null));
+  const weightChange = firstWeight && latestWeight && firstWeight.id !== latestWeight.id
+    ? Number(latestWeight.weight_kg) - Number(firstWeight.weight_kg) : null;
 
   return (
     <div className="space-y-8">
@@ -69,11 +71,11 @@ export default function AdminStudentProgress() {
         <Stat label="Variação de peso" value={weightChange == null ? '—' : `${weightChange > 0 ? '+' : ''}${weightChange.toFixed(1)} kg`} />
       </div>
 
-      {latest && <section className="rounded-2xl border border-[var(--color-divider-dark)] bg-white p-5">
-        <h2 className="font-semibold">Medidas mais recentes · {formatDate(latest.recorded_on)}</h2>
+      {latestMeasures && <section className="rounded-2xl border border-[var(--color-divider-dark)] bg-white p-5">
+        <h2 className="font-semibold">Medidas mais recentes · {formatDate(latestMeasures.recorded_on)}</h2>
         <div className="mt-4 flex flex-wrap gap-3">
-          {measurements.map(({ key, label, unit }) => latest[key] != null &&
-            <span key={key} className="rounded-lg bg-[var(--color-warm-grey)] px-3 py-2 text-sm">{label}: <strong>{latest[key]} {unit}</strong></span>)}
+          {measurements.map(({ key, label, unit }) => latestMeasures[key] != null &&
+            <span key={key} className="rounded-lg bg-[var(--color-warm-grey)] px-3 py-2 text-sm">{label}: <strong>{latestMeasures[key]} {unit}</strong></span>)}
         </div>
       </section>}
 
