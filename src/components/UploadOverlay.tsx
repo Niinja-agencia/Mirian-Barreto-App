@@ -1,6 +1,6 @@
 import { Loader2, UploadCloud, Clapperboard } from 'lucide-react';
 import { formatBytes, formatEta } from '@/lib/format';
-import type { UploadProgress } from '@/lib/videoHost';
+import type { UploadProgress } from '@/lib/chunkedVideoHost';
 
 /**
  * Tela cheia de progresso do envio/conversão do vídeo.
