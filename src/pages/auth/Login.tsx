@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import AuthShell from '@/components/AuthShell';
 import { TextInput, SubmitButton } from '@/components/form';
 import { useAuth } from '@/context/AuthContext';
+import { authPath, checkoutDestination } from '@/lib/authRedirect';
 
 export default function Login() {
   const { signIn, session } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const from = (location.state as { from?: string } | null)?.from ?? '/app';
+  const next = checkoutDestination(searchParams.get('next'));
+  const from = next ?? (location.state as { from?: string } | null)?.from ?? '/app';
 
   useEffect(() => {
     if (session) navigate(from, { replace: true });
@@ -39,7 +42,7 @@ export default function Login() {
       footer={
         <>
           Ainda não tem conta?{' '}
-          <Link to="/cadastro" className="text-[var(--color-rose)] font-medium hover:underline">
+          <Link to={authPath('cadastro', next)} className="text-[var(--color-rose)] font-medium hover:underline">
             Criar conta
           </Link>
         </>

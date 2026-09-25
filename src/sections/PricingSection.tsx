@@ -1,86 +1,26 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import { useLanguage } from '@/context/LanguageContext';
 import { Check, Shield, XCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { brl } from '@/lib/format';
 
-const plans = [
-  {
-    id: 'avulso',
-    namePt: 'Avulso',
-    nameEn: 'Single',
-    descPt: 'Experimente um treino',
-    descEn: 'Try a single workout',
-    price: 'R$19,90',
-    pricePt: 'único',
-    priceEn: 'one-time',
-    featuresPt: ['Apenas 1 treino / videoaula', 'Acesso imediato', 'Sem assinatura'],
-    featuresEn: ['Just 1 workout / video class', 'Instant access', 'No subscription'],
-    highlighted: false,
-  },
-  {
-    id: 'basic',
-    namePt: 'Básico',
-    nameEn: 'Basic',
-    descPt: 'Perfeito para começar',
-    descEn: 'Perfect to get started',
-    price: 'R$39,90',
-    pricePt: '/mês',
-    priceEn: '/mo',
-    featuresPt: ['3 videoaulas', 'Treinos atualizados', 'Suporte via comunidade'],
-    featuresEn: ['3 video classes', 'Updated workouts', 'Community support'],
-    highlighted: false,
-  },
-  {
-    id: 'premium',
-    namePt: 'Premium',
-    nameEn: 'Premium',
-    descPt: 'O favorito das alunas',
-    descEn: "The students' favorite",
-    price: 'R$69,90',
-    pricePt: '/mês',
-    priceEn: '/mo',
-    featuresPt: [
-      'Acesso a todos os treinos',
-      'Acompanhamento de progresso',
-      'Tire suas dúvidas direto com a Mirian',
-      'Download offline',
-    ],
-    featuresEn: [
-      'Access to all workouts',
-      'Progress tracking',
-      'Ask Mirian your questions directly',
-      'Offline download',
-    ],
-    highlighted: true,
-  },
-  {
-    id: 'vip',
-    namePt: 'VIP',
-    nameEn: 'VIP',
-    descPt: 'Para resultados acelerados',
-    descEn: 'For accelerated results',
-    price: 'R$99,90',
-    pricePt: '/mês',
-    priceEn: '/mo',
-    featuresPt: [
-      'Tudo do Premium',
-      'Consultoria nutricional mensal',
-      '1 videochamada mensal',
-      'Plano totalmente individualizado',
-      'Prioridade no suporte',
-    ],
-    featuresEn: [
-      'Everything in Premium',
-      'Monthly nutrition consulting',
-      '1 monthly video call',
-      'Fully individualized plan',
-      'Priority support',
-    ],
-    highlighted: false,
-  },
-];
+interface PricingPlan {
+  id: string;
+  namePt: string;
+  nameEn: string;
+  descPt: string;
+  descEn: string;
+  price: string;
+  pricePt: string;
+  priceEn: string;
+  featuresPt: string[];
+  featuresEn: string[];
+  highlighted: boolean;
+}
 
-function PricingCard({ plan, index }: { plan: (typeof plans)[0]; index: number }) {
+function PricingCard({ plan, index }: { plan: PricingPlan; index: number }) {
   const { ref, isVisible } = useScrollReveal();
   const { currentLang } = useLanguage();
   const navigate = useNavigate();
@@ -163,6 +103,30 @@ function PricingCard({ plan, index }: { plan: (typeof plans)[0]; index: number }
 
 export default function PricingSection() {
   const { ref: headerRef, isVisible: headerVisible } = useScrollReveal();
+  const [plans, setPlans] = useState<PricingPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    supabase.from('plans').select('*').eq('active', true).order('sort_order').then(({ data }) => {
+      if (!active) return;
+      setPlans((data ?? []).map((plan) => ({
+        id: plan.slug,
+        namePt: plan.name_pt,
+        nameEn: plan.name_en,
+        descPt: plan.description_pt ?? '',
+        descEn: plan.description_en ?? '',
+        price: brl(Number(plan.price_monthly)),
+        pricePt: plan.slug === 'avulso' ? 'único' : '/mês',
+        priceEn: plan.slug === 'avulso' ? 'one-time' : '/mo',
+        featuresPt: plan.features_pt,
+        featuresEn: plan.features_en,
+        highlighted: plan.highlighted,
+      })));
+      setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
   return (
     <section
       id="planos"
@@ -193,6 +157,9 @@ export default function PricingSection() {
             <PricingCard key={plan.id} plan={plan} index={index} />
           ))}
         </div>
+        {loading && <p className="text-center text-[var(--color-medium-grey)]">Carregando planos…</p>}
+        {!loading && plans.length === 0 &&
+          <p className="text-center text-[var(--color-medium-grey)]">Planos indisponíveis no momento. Tente novamente em instantes.</p>}
 
         <div className="flex flex-wrap items-center justify-center gap-8 lg:gap-10 mt-12">
           <div className="flex items-center gap-2 text-[var(--color-medium-grey)]">

@@ -59,6 +59,7 @@ export type Subscription = {
   cancel_at_period_end: boolean;
   canceled_at: string | null;
   mp_preapproval_id: string | null;
+  agreed_amount: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -113,6 +114,19 @@ export type WorkoutProgress = {
   completed_at: string;
 };
 
+export type BodyProgress = {
+  id: string;
+  user_id: string;
+  recorded_on: string;
+  weight_kg: number | null;
+  waist_cm: number | null;
+  hip_cm: number | null;
+  thigh_cm: number | null;
+  photo_path: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
 export type Announcement = {
   id: string;
   title_pt: string;
@@ -143,6 +157,7 @@ export type Database = {
       workout_categories: T<WorkoutCategory>;
       workouts: T<Workout>;
       workout_progress: T<WorkoutProgress>;
+      body_progress: T<BodyProgress>;
       announcements: T<Announcement>;
     };
     Views: Record<never, never>;

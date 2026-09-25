@@ -1,13 +1,16 @@
 import { Navigate, useLocation } from 'react-router';
 import { useAuth } from '@/context/AuthContext';
 import FullScreenLoader from '@/components/FullScreenLoader';
+import { authPath } from '@/lib/authRedirect';
 
 export default function ProtectedRoute({
   children,
   adminOnly = false,
+  signupFirst = false,
 }: {
   children: React.ReactNode;
   adminOnly?: boolean;
+  signupFirst?: boolean;
 }) {
   const { session, profile, loading, isAdmin } = useAuth();
   const location = useLocation();
@@ -15,6 +18,9 @@ export default function ProtectedRoute({
   if (loading) return <FullScreenLoader />;
 
   if (!session) {
+    if (signupFirst) {
+      return <Navigate to={authPath('cadastro', location.pathname)} replace />;
+    }
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 

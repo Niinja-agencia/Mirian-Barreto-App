@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     if (!plan_slug || !method) return json({ error: 'parâmetros faltando' }, 400);
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-    const { data: plan } = await admin.from('plans').select('*').eq('slug', plan_slug).maybeSingle();
+    const { data: plan } = await admin.from('plans').select('*').eq('slug', plan_slug).eq('active', true).maybeSingle();
     if (!plan) return json({ error: 'plano não encontrado' }, 404);
 
     const amount = Number(plan.price_monthly);
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     if (method === 'credit_card' && !oneTime) {
       const { data: sub, error: subErr } = await admin
         .from('subscriptions')
-        .insert({ user_id: user.id, plan_id: plan.id, status: 'pending', billing: 'monthly' })
+        .insert({ user_id: user.id, plan_id: plan.id, status: 'pending', billing: 'monthly', agreed_amount: amount })
         .select('id')
         .single();
       if (subErr) return json({ error: subErr.message }, 500);
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
         }),
       });
       const data = await res.json();
-      if (!res.ok) return json({ error: 'mp_error', detail: data }, 502);
+      if (!res.ok || !data.init_point) return json({ error: 'mp_error', detail: data }, 502);
       await admin.from('subscriptions').update({ mp_preapproval_id: data.id }).eq('id', sub.id);
       return json({ init_point: data.init_point ?? data.sandbox_init_point });
     }
@@ -82,13 +82,13 @@ Deno.serve(async (req) => {
           items: [{ title: `Mirian Barreto — ${planName}`, quantity: 1, unit_price: amount, currency_id: 'BRL' }],
           payer: { email: user.email },
           external_reference: pay.id,
-          back_urls: { success: `${APP_URL}/app`, pending: `${APP_URL}/app`, failure: `${APP_URL}/app/assinatura` },
+          back_urls: { success: `${APP_URL}/app/assinatura`, pending: `${APP_URL}/app/assinatura`, failure: `${APP_URL}/app/assinatura` },
           auto_return: 'approved',
           metadata: { plan_id: plan.id, billing: 'once', user_id: user.id },
         }),
       });
       const data = await res.json();
-      if (!res.ok) return json({ error: 'mp_error', detail: data }, 502);
+      if (!res.ok || !data.init_point) return json({ error: 'mp_error', detail: data }, 502);
       return json({ init_point: data.init_point ?? data.sandbox_init_point });
     }
 

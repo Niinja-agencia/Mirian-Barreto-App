@@ -14,7 +14,9 @@ interface UseSubscriptionResult {
   refresh: () => Promise<void>;
 }
 
-const ACTIVE = ['active', 'trialing'];
+const active = (sub: ActiveSubscription) =>
+  (['active', 'trialing'].includes(sub.status) || (sub.status === 'canceled' && sub.cancel_at_period_end))
+  && (!sub.current_period_end || new Date(sub.current_period_end) > new Date());
 
 export function useSubscription(): UseSubscriptionResult {
   const { user } = useAuth();
@@ -23,30 +25,20 @@ export function useSubscription(): UseSubscriptionResult {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!user) {
-      setSubscription(null);
-      setTier(0);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    // Assinatura mais recente do usuário (com dados do plano)
+    if (!user) return;
+    // Mantém o plano vigente visível enquanto uma troca de plano está pendente.
     const { data } = await supabase
       .from('subscriptions')
       .select('*, plan:plans(*)')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .order('created_at', { ascending: false });
 
-    const sub = (data as unknown as ActiveSubscription | null) ?? null;
+    const subs = (data as unknown as ActiveSubscription[]) ?? [];
+    const sub = subs.filter(active).sort((a, b) =>
+      (b.plan?.tier ?? 0) - (a.plan?.tier ?? 0)
+    )[0] ?? subs[0] ?? null;
     setSubscription(sub);
-
-    const valid =
-      sub &&
-      ACTIVE.includes(sub.status) &&
-      (!sub.current_period_end || new Date(sub.current_period_end) > new Date());
-    setTier(valid && sub?.plan ? sub.plan.tier : 0);
+    setTier(sub && active(sub) && sub.plan ? sub.plan.tier : 0);
     setLoading(false);
   }, [user]);
 
@@ -54,5 +46,5 @@ export function useSubscription(): UseSubscriptionResult {
     load();
   }, [load]);
 
-  return { subscription, tier, loading, refresh: load };
+  return { subscription: user ? subscription : null, tier: user ? tier : 0, loading: user ? loading : false, refresh: load };
 }

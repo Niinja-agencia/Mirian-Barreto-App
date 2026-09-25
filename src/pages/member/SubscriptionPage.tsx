@@ -25,6 +25,12 @@ export default function SubscriptionPage() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (subscription?.status !== 'pending') return;
+    const timer = window.setInterval(() => { void refresh(); }, 5000);
+    return () => window.clearInterval(timer);
+  }, [subscription?.status, refresh]);
+
   async function cancel() {
     if (!subscription) return;
     if (!confirm('Tem certeza que deseja cancelar? O acesso continua até o fim do período pago.')) return;
@@ -68,19 +74,21 @@ export default function SubscriptionPage() {
                   : '—'}
               </p>
               <p className="mt-1 text-sm text-[rgba(255,255,255,0.7)]">
-                {subscription.billing === 'monthly' ? 'Mensal' : 'Anual'} ·{' '}
+                {subscription.plan?.slug === 'avulso' ? 'Compra única' : subscription.billing === 'monthly' ? 'Mensal' : 'Anual'} ·{' '}
                 {subscriptionStatusLabel(subscription.status)}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-[rgba(255,255,255,0.6)]">
-                {subscription.cancel_at_period_end ? 'Acesso até' : 'Próxima renovação'}
-              </p>
-              <p className="text-lg font-semibold">{formatDate(subscription.current_period_end)}</p>
+              {subscription.current_period_end && <>
+                <p className="text-sm text-[rgba(255,255,255,0.6)]">
+                  {subscription.cancel_at_period_end ? 'Acesso até' : 'Próxima renovação'}
+                </p>
+                <p className="text-lg font-semibold">{formatDate(subscription.current_period_end)}</p>
+              </>}
             </div>
           </div>
 
-          {active && !subscription.cancel_at_period_end && (
+          {active && !!subscription.mp_preapproval_id && !subscription.cancel_at_period_end && (
             <button
               onClick={cancel}
               disabled={canceling}
@@ -103,7 +111,7 @@ export default function SubscriptionPage() {
         <h2 className="mb-4 text-lg font-semibold text-[var(--color-black)]">
           {active ? 'Mudar de plano' : 'Escolha seu plano'}
         </h2>
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
           {plans.map((plan) => {
             const isCurrent = subscription?.plan_id === plan.id && active;
             const features = currentLang === 'pt' ? plan.features_pt : plan.features_en;
@@ -122,7 +130,9 @@ export default function SubscriptionPage() {
                 </p>
                 <p className="mt-2 text-3xl font-bold text-[var(--color-black)]">
                   {brl(plan.price_monthly)}
-                  <span className="text-sm font-normal text-[var(--color-medium-grey)]">/mês</span>
+                  <span className="text-sm font-normal text-[var(--color-medium-grey)]">
+                    {plan.slug === 'avulso' ? ' único' : '/mês'}
+                  </span>
                 </p>
                 <ul className="mt-4 flex-1 space-y-2">
                   {features.map((f) => (

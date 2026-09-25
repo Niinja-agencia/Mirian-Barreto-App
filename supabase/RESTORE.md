@@ -15,7 +15,7 @@ supabase link --project-ref <NOVO_REF>
 supabase db push
 ```
 > Alternativa sem CLI: colar cada arquivo de `supabase/migrations/` (na ordem
-> 0001 → 0007) no SQL Editor do painel.
+> 0001 → 0009) no SQL Editor do painel.
 
 ## 2. Deploy das Edge Functions
 ```bash
@@ -24,6 +24,7 @@ supabase secrets set \
   APP_URL="https://mirianbarreto.com.br" \
   CRON_SECRET="<string aleatória>" \
   MP_ACCESS_TOKEN="<token Mercado Pago>" \
+  MP_WEBHOOK_SECRET="<secret da assinatura do webhook Mercado Pago>" \
   RESEND_API_KEY="<chave Resend>" \
   EMAIL_FROM="Mirian Barreto <contato@mirianbarreto.com.br>" \
   --project-ref <NOVO_REF>
@@ -44,6 +45,14 @@ SUPABASE_URL=... SUPABASE_SERVICE_ROLE=... node supabase/seed/media.mjs
 ## 5. Configurar Auth (painel)
 - **Site URL:** `https://mirianbarreto.com.br`
 - **Redirect URLs:** `/login`, `/redefinir-senha` (produção e `http://localhost:3000`)
+- Permita `/login**` na lista de redirecionamentos para preservar o plano escolhido
+  após confirmar o e-mail.
+- **Password Security › Minimum password length:** `8`.
+
+## 5.1 Webhook Mercado Pago
+- URL: `https://<REF>.supabase.co/functions/v1/mp-webhook`
+- Eventos: pagamentos e planos/assinaturas.
+- Copie a chave secreta de assinatura para `MP_WEBHOOK_SECRET` antes de publicar.
 
 ## 6. Limite de upload do Storage
 Settings → Storage → **Upload file size limit = 1 GB**

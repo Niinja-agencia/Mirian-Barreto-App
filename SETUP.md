@@ -25,10 +25,9 @@ Na Vercel, defina as mesmas `VITE_*` em Project › Settings › Environment Var
 
 ## 2. Banco de dados (migrações)
 
-As migrações estão em `supabase/migrations/`:
-- `0001_init.sql` — schema + RLS + buckets de Storage
-- `0002_seed.sql` — planos (Básico/Premium/VIP) + categorias
-- `0003_webhook_events.sql` — auditoria/idempotência de webhooks
+As migrações estão em `supabase/migrations/` (aplicar todas, na ordem). As
+`0008_body_progress.sql` e `0009_payment_webhook.sql` são obrigatórias antes
+de publicar a área de evolução e as Edge Functions atualizadas.
 
 **Opção A — Supabase CLI (recomendado):**
 ```bash
@@ -39,19 +38,21 @@ supabase db push        # aplica as migrações
 ```
 
 **Opção B — SQL Editor (mais rápido, sem CLI):**
-Cole o conteúdo de cada arquivo de `supabase/migrations/` (na ordem 0001 → 0002 →
-0003) no Dashboard › SQL Editor e execute.
+Cole o conteúdo de cada arquivo de `supabase/migrations/` (na ordem 0001 → 0009)
+no Dashboard › SQL Editor e execute.
 
 ---
 
 ## 3. Autenticação (Supabase Dashboard › Authentication)
 
-- **URL Configuration › Site URL:** `https://mirian-barreto-app.vercel.app`
+- **URL Configuration › Site URL:** `https://www.mirianbarreto.com.br`
 - **Redirect URLs:** adicione
-  - `https://mirian-barreto-app.vercel.app/login`
-  - `https://mirian-barreto-app.vercel.app/redefinir-senha`
-  - `http://localhost:3000/login` e `http://localhost:3000/redefinir-senha` (dev)
+  - `https://www.mirianbarreto.com.br/login**` (confirmação de e-mail com o plano escolhido)
+  - `https://www.mirianbarreto.com.br/redefinir-senha`
+  - `http://localhost:3000/login**` e `http://localhost:3000/redefinir-senha` (dev)
 - E-mail: mantenha "Confirm email" ligado (o cadastro envia confirmação).
+- **Password Security › Minimum password length:** configure **8**. O front-end também
+  valida 8 caracteres, mas esta configuração aplica a regra no próprio Auth.
 
 ### Criar a primeira administradora (Mirian)
 Após a Mirian se cadastrar normalmente pelo app, promova-a a admin:
@@ -69,6 +70,7 @@ As migrações já criam os buckets:
 - `workout-videos` (privado) — vídeos; acesso só por URL assinada via Edge Function
 - `thumbnails` (público) — capas dos treinos
 - `avatars` (público)
+- `progress-photos` (privado) — fotos de evolução, com acesso apenas da aluna e da administração
 
 Nenhuma ação manual necessária além de rodar as migrações.
 
@@ -90,7 +92,8 @@ supabase functions deploy renewal-reminders
 ```bash
 supabase secrets set \
   MP_ACCESS_TOKEN="<access token de produção do Mercado Pago>" \
-  APP_URL="https://mirian-barreto-app.vercel.app" \
+  MP_WEBHOOK_SECRET="<secret da assinatura do webhook do Mercado Pago>" \
+  APP_URL="https://www.mirianbarreto.com.br" \
   RESEND_API_KEY="<chave do Resend>" \
   EMAIL_FROM="Mirian Barreto <contato@SEU_DOMINIO>" \
   CRON_SECRET="<string aleatória forte>"
@@ -103,13 +106,15 @@ automaticamente pelo runtime das funções.)
 ## 6. Mercado Pago
 
 1. Crie a aplicação no painel do Mercado Pago e pegue o **Access Token** (produção).
-2. Configure o **Webhook/IPN** apontando para:
+2. Configure o **Webhook** apontando para:
    `https://fzpmypayekcpwvhapgsk.supabase.co/functions/v1/mp-webhook`
-   Eventos: **Pagamentos** e **Planos e assinaturas**.
+   Eventos: **Pagamentos** e **Planos e assinaturas**. Copie a chave secreta
+   de assinatura das notificações para `MP_WEBHOOK_SECRET`.
 3. Cartão = assinatura recorrente (preapproval). Pix = cobrança avulsa (renovação
    manual; o lembrete é enviado por e-mail).
-4. **Importante (produção):** implemente a verificação HMAC do header `x-signature`
-   em `mp-webhook` antes de ir ao ar com dinheiro real (hoje há um TODO marcado).
+4. O webhook valida `x-signature` e `x-request-id`, consulta o pagamento no Mercado
+   Pago e confirma valor e moeda antes de liberar o plano. A migração 0009 deve
+   estar aplicada antes do deploy desta função.
 
 ---
 
@@ -135,7 +140,8 @@ Rotas: `/` (landing), `/login`, `/cadastro`, `/app` (aluna), `/admin` (admin),
 ---
 
 ## Pendências conhecidas / próximos passos
-- Verificação HMAC do webhook do Mercado Pago (segurança de produção).
+- Teste um pagamento de baixo valor no ambiente de produção antes de divulgar o checkout;
+  a integração só estará completa após configurar o webhook e seu secret.
 - Proteção de vídeo é client-side (URL assinada + marca d'água); para DRM real,
   migrar `workout-videos` para Bunny/Cloudflare Stream (o `video_path` já está
   abstraído para facilitar a troca).

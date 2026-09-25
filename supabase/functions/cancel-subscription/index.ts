@@ -38,21 +38,22 @@ Deno.serve(async (req) => {
     if (sub.user_id !== user.id) return json({ error: 'forbidden' }, 403);
 
     // Cancela a cobrança recorrente no MP (se houver)
-    if (sub.mp_preapproval_id) {
-      await fetch(`${MP}/preapproval/${sub.mp_preapproval_id}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: 'cancelled' }),
-      });
-    }
+    if (!sub.mp_preapproval_id) return json({ error: 'assinatura não recorrente' }, 400);
+    const response = await fetch(`${MP}/preapproval/${sub.mp_preapproval_id}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status: 'canceled' }),
+    });
+    if (!response.ok) return json({ error: 'falha ao cancelar no Mercado Pago' }, 502);
 
-    await admin
+    const { error: updateError } = await admin
       .from('subscriptions')
       .update({ cancel_at_period_end: true, canceled_at: new Date().toISOString() })
       .eq('id', sub.id);
+    if (updateError) return json({ error: updateError.message }, 500);
 
     return json({ ok: true });
   } catch (e) {

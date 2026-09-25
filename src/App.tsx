@@ -25,6 +25,7 @@ import AdminWorkouts from '@/pages/admin/AdminWorkouts';
 import AdminCategories from '@/pages/admin/AdminCategories';
 import AdminPlans from '@/pages/admin/AdminPlans';
 import AdminStudents from '@/pages/admin/AdminStudents';
+import AdminStudentProgress from '@/pages/admin/AdminStudentProgress';
 import AdminAnnouncements from '@/pages/admin/AdminAnnouncements';
 
 function App() {
@@ -43,7 +44,7 @@ function App() {
           <Route
             path="/checkout/:slug"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute signupFirst>
                 <Checkout />
               </ProtectedRoute>
             }
@@ -80,6 +81,7 @@ function App() {
             <Route path="categorias" element={<AdminCategories />} />
             <Route path="planos" element={<AdminPlans />} />
             <Route path="alunas" element={<AdminStudents />} />
+            <Route path="alunas/:id" element={<AdminStudentProgress />} />
             <Route path="avisos" element={<AdminAnnouncements />} />
           </Route>
 

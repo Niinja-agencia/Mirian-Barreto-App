@@ -11,7 +11,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   isAdmin: boolean;
-  signUp: (data: SignUpData) => Promise<{ error: string | null }>;
+  signUp: (data: SignUpData) => Promise<{ error: string | null; needsEmailConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
@@ -24,6 +24,7 @@ interface SignUpData {
   password: string;
   fullName: string;
   phone?: string;
+  next?: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,7 +35,7 @@ function friendlyError(message?: string): string {
   if (m.includes('invalid login credentials')) return 'E-mail ou senha incorretos.';
   if (m.includes('email not confirmed')) return 'Confirme seu e-mail antes de entrar.';
   if (m.includes('user already registered')) return 'Este e-mail já está cadastrado.';
-  if (m.includes('password should be at least')) return 'A senha deve ter pelo menos 6 caracteres.';
+  if (m.includes('password should be at least')) return 'A senha deve ter pelo menos 8 caracteres.';
   if (m.includes('rate limit') || m.includes('too many')) return 'Muitas tentativas. Aguarde um instante.';
   return message;
 }
@@ -82,15 +83,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [loadProfile]);
 
   const signUp = useCallback(async (d: SignUpData) => {
-    const { error } = await supabase.auth.signUp({
+    if (d.password.length < 8) {
+      return { error: 'A senha deve ter pelo menos 8 caracteres.', needsEmailConfirmation: false };
+    }
+    const { data, error } = await supabase.auth.signUp({
       email: d.email,
       password: d.password,
       options: {
         data: { full_name: d.fullName, phone: d.phone ?? null },
-        emailRedirectTo: `${window.location.origin}/login`,
+        emailRedirectTo: `${window.location.origin}/login${d.next ? `?next=${encodeURIComponent(d.next)}` : ''}`,
       },
     });
-    return { error: error ? friendlyError(error.message) : null };
+    return { error: error ? friendlyError(error.message) : null, needsEmailConfirmation: !data.session };
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
@@ -111,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updatePassword = useCallback(async (password: string) => {
+    if (password.length < 8) return { error: 'A senha deve ter pelo menos 8 caracteres.' };
     const { error } = await supabase.auth.updateUser({ password });
     return { error: error ? friendlyError(error.message) : null };
   }, []);

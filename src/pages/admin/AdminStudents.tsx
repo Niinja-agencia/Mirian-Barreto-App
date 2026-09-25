@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
+import { Link } from 'react-router';
 import Avatar from '@/components/Avatar';
 import { supabase } from '@/lib/supabase';
 import { formatDate, subscriptionStatusLabel, LEVEL_LABELS } from '@/lib/format';
@@ -10,7 +11,9 @@ interface StudentRow extends Profile {
   subscriptions: (Subscription & { plan: Pick<Plan, 'name_pt'> | null })[];
 }
 
-const ACTIVE = ['active', 'trialing'];
+const isActiveSubscription = (sub: Subscription) =>
+  (['active', 'trialing'].includes(sub.status) || (sub.status === 'canceled' && sub.cancel_at_period_end))
+  && (!sub.current_period_end || new Date(sub.current_period_end) > new Date());
 
 export default function AdminStudents() {
   const [rows, setRows] = useState<StudentRow[]>([]);
@@ -40,7 +43,7 @@ export default function AdminStudents() {
     const subs = [...(r.subscriptions ?? [])].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-    return subs[0] ?? null;
+    return subs.find(isActiveSubscription) ?? subs[0] ?? null;
   }
 
   return (
@@ -66,12 +69,13 @@ export default function AdminStudents() {
               <th className="px-4 py-3 font-medium">Plano</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Desde</th>
+              <th className="px-4 py-3 font-medium">Evolução</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((r) => {
               const sub = currentSub(r);
-              const isActive = sub && ACTIVE.includes(sub.status);
+              const isActive = sub && isActiveSubscription(sub);
               return (
                 <tr key={r.id} className="border-b border-[var(--color-divider-dark)] last:border-0">
                   <td className="px-4 py-3">
@@ -97,6 +101,9 @@ export default function AdminStudents() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-[var(--color-medium-grey)]">{formatDate(r.created_at)}</td>
+                  <td className="px-4 py-3">
+                    {r.role === 'aluno' && <Link to={`/admin/alunas/${r.id}`} className="font-medium text-[var(--color-rose)] hover:underline">Acompanhar</Link>}
+                  </td>
                 </tr>
               );
             })}

@@ -8,7 +8,7 @@ import { formatDuration, LEVEL_LABELS } from '@/lib/format';
 import { youtubeId } from '@/components/YouTubeEmbed';
 import { uploadWorkoutVideo, waitForConversion, type UploadProgress } from '@/lib/videoHost';
 import UploadOverlay from '@/components/UploadOverlay';
-import type { Workout, WorkoutCategory, FitnessLevel } from '@/lib/database.types';
+import type { Workout, WorkoutCategory, FitnessLevel, Plan } from '@/lib/database.types';
 import FullScreenLoader from '@/components/FullScreenLoader';
 
 interface FormState {
@@ -54,6 +54,7 @@ async function uploadTo(bucket: string, file: File): Promise<string> {
 export default function AdminWorkouts() {
   const [rows, setRows] = useState<Workout[]>([]);
   const [cats, setCats] = useState<WorkoutCategory[]>([]);
+  const [plans, setPlans] = useState<Pick<Plan, 'tier' | 'name_pt'>[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>({ ...empty });
@@ -65,12 +66,14 @@ export default function AdminWorkouts() {
   const [queuePos, setQueuePos] = useState<number | undefined>(undefined);
 
   async function load() {
-    const [{ data: w }, { data: c }] = await Promise.all([
+    const [{ data: w }, { data: c }, { data: p }] = await Promise.all([
       supabase.from('workouts').select('*').order('sort_order'),
       supabase.from('workout_categories').select('*').order('sort_order'),
+      supabase.from('plans').select('tier, name_pt').eq('active', true).order('tier'),
     ]);
     setRows(w ?? []);
     setCats(c ?? []);
+    setPlans(p ?? []);
     setLoading(false);
   }
   useEffect(() => {
@@ -78,7 +81,7 @@ export default function AdminWorkouts() {
   }, []);
 
   function openNew() {
-    setForm({ ...empty, category_id: cats[0]?.id ?? '' });
+    setForm({ ...empty, category_id: cats[0]?.id ?? '', required_tier: plans[0]?.tier ?? 1 });
     setOpen(true);
   }
   function openEdit(w: Workout) {
@@ -311,9 +314,16 @@ export default function AdminWorkouts() {
                 onChange={(e) => setForm({ ...form, required_tier: Number(e.target.value) })}
                 className="w-full rounded-lg border border-[var(--color-divider-dark)] px-3 py-2.5 text-sm"
               >
-                <option value={1}>1 — Básico</option>
-                <option value={2}>2 — Premium</option>
-                <option value={3}>3 — VIP</option>
+                {plans.map((plan) => (
+                  <option key={plan.tier} value={plan.tier}>
+                    {plan.tier} — {plan.name_pt}
+                  </option>
+                ))}
+                {!plans.some((plan) => plan.tier === form.required_tier) && (
+                  <option value={form.required_tier}>
+                    {form.required_tier} — Plano inativo
+                  </option>
+                )}
               </select>
             </label>
           </div>
