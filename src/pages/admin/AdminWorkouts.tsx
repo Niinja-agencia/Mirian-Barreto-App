@@ -6,7 +6,7 @@ import { TextInput, SubmitButton } from '@/components/form';
 import Modal from '@/components/Modal';
 import { formatDuration, LEVEL_LABELS } from '@/lib/format';
 import { youtubeId } from '@/components/YouTubeEmbed';
-import { uploadWorkoutVideo, waitForConversion, type UploadProgress } from '@/lib/videoHost';
+import { MAX_VIDEO_BYTES, uploadWorkoutVideo, waitForConversion, type UploadProgress } from '@/lib/chunkedVideoHost';
 import UploadOverlay from '@/components/UploadOverlay';
 import type { Workout, WorkoutCategory, FitnessLevel, Plan } from '@/lib/database.types';
 import FullScreenLoader from '@/components/FullScreenLoader';
@@ -122,6 +122,10 @@ export default function AdminWorkouts() {
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (videoFile && (videoFile.size <= 0 || videoFile.size > MAX_VIDEO_BYTES)) {
+      toast.error('O vídeo deve ter até 8 GB.');
+      return;
+    }
     setSaving(true);
     const payload: Record<string, unknown> = {
       title_pt: form.title_pt.trim(),
@@ -150,17 +154,19 @@ export default function AdminWorkouts() {
     // 2. se escolheu um vídeo, envia para a VPS (que converte automaticamente)
     if (videoFile) {
       try {
-        const { data: sess } = await supabase.auth.getSession();
-        const token = sess.session?.access_token;
-        if (!token) throw new Error('Sessão expirada.');
+        const getToken = async () => {
+          const { data: sess } = await supabase.auth.getSession();
+          if (!sess.session?.access_token) throw new Error('Sessão expirada.');
+          return sess.session.access_token;
+        };
 
         setPhase('uploading');
         setProgress(null);
-        const jobId = await uploadWorkoutVideo(videoFile, saved.id as string, token, setProgress);
+        const jobId = await uploadWorkoutVideo(videoFile, saved.id as string, getToken, setProgress);
 
         setPhase('converting');
         toast.info('Vídeo enviado. Convertendo — pode levar alguns minutos.');
-        await waitForConversion(jobId, token, (job) =>
+        await waitForConversion(jobId, getToken, (job) =>
           setQueuePos(job.status === 'queued' ? job.position : undefined)
         );
         toast.success('Vídeo convertido e publicado!');
@@ -352,8 +358,8 @@ export default function AdminWorkouts() {
                 className="text-sm"
               />
               <span className="mt-1 block text-xs text-[var(--color-medium-grey)]">
-                O vídeo é convertido automaticamente no servidor (720p vertical, otimizado). Pode
-                enviar o arquivo original, sem limite de tamanho.
+                O vídeo é convertido automaticamente no servidor (720p vertical, otimizado).
+                Arquivos de até 8 GB são enviados em partes e podem ser retomados após uma interrupção.
               </span>
               {videoFile && phase === 'idle' && (
                 <span className="mt-1 block text-xs text-[var(--color-black)]">
