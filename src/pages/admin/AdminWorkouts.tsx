@@ -351,9 +351,10 @@ export default function AdminWorkouts() {
                   value={form.required_tier}
                   onChange={(e) => setForm({ ...form, required_tier: Number(e.target.value) })}
                 >
-                  <option value={1}>1 — Básico</option>
-                  <option value={2}>2 — Premium</option>
-                  <option value={3}>3 — VIP</option>
+                  <option value={1}>1 — Avulso</option>
+                  <option value={2}>2 — Básico</option>
+                  <option value={3}>3 — Premium</option>
+                  <option value={4}>4 — VIP</option>
                 </SelectInput>
               </FieldGrid>
             </FormSection>

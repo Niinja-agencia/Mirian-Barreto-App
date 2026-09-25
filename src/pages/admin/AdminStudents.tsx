@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
+import { Link } from 'react-router';
 import Avatar from '@/components/Avatar';
 import { supabase } from '@/lib/supabase';
 import { formatDate, subscriptionIsCurrent, subscriptionLabel, LEVEL_LABELS } from '@/lib/format';
@@ -73,6 +74,7 @@ export default function AdminStudents() {
               <th className="px-4 py-3 font-medium">Plano</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Desde</th>
+              <th className="px-4 py-3 font-medium">Evolução</th>
             </tr>
           </thead>
           <tbody>
@@ -105,6 +107,9 @@ export default function AdminStudents() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-[var(--color-medium-grey)]">{formatDate(r.created_at)}</td>
+                  <td className="px-4 py-3">
+                    {r.role === 'aluno' && <Link to={`/admin/alunas/${r.id}`} className="font-medium text-[var(--color-rose)] hover:underline">Acompanhar</Link>}
+                  </td>
                 </tr>
               );
             })}

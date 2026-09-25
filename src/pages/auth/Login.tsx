@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import AuthShell from '@/components/AuthShell';
 import { TextInput, SubmitButton } from '@/components/form';
 import { useAuth } from '@/context/AuthContext';
+import { authPath, checkoutDestination } from '@/lib/authRedirect';
 
 export default function Login() {
   const { signIn, session, profile, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,7 +19,8 @@ export default function Login() {
   // para a sua casa. Antes ia sempre para /app, e a Mirian caía na área da
   // aluna, sem plano, com todos os treinos marcados como bloqueados — o painel
   // de administração existia mas nada levava até ele.
-  const from = (location.state as { from?: string } | null)?.from ?? null;
+  const from = checkoutDestination(searchParams.get('next')) ??
+    (location.state as { from?: string } | null)?.from ?? null;
 
   useEffect(() => {
     if (!session) return;
@@ -51,7 +54,7 @@ export default function Login() {
       footer={
         <>
           Ainda não tem conta?{' '}
-          <Link to="/cadastro" className="text-[var(--color-rose)] font-medium hover:underline">
+          <Link to={authPath('cadastro', checkoutDestination(searchParams.get('next')))} className="text-[var(--color-rose)] font-medium hover:underline">
             Criar conta
           </Link>
         </>
