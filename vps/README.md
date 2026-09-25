@@ -21,6 +21,10 @@ banco, auth e o resto.
 | Rota | Auth | O que faz |
 |---|---|---|
 | `POST /upload` | JWT **admin** | Recebe o vídeo bruto, responde `202 {job_id}` e converte em background |
+| `POST /upload/init` | JWT **admin** | Cria envio retomável de até 8 GB (`workout_id`, `file_size`) |
+| `GET /upload/:uploadId` | JWT **admin** | Informa quantidade de bytes já recebidos |
+| `PUT /upload/:uploadId/chunk` | JWT **admin** | Recebe parte de até 32 MB com `X-Upload-Offset` |
+| `POST /upload/:uploadId/finish` | JWT **admin** | Confirma arquivo completo e inicia conversão |
 | `GET /status/:jobId` | JWT **admin** | `processing` / `done` / `error` |
 | `POST /sign` | JWT **aluna** | Valida o plano ativo e devolve URL assinada (3h) |
 | `GET /v/:file` | assinatura | Valida HMAC + expiração → `X-Accel-Redirect` (nginx serve) |
@@ -33,6 +37,10 @@ ffmpeg -i <bruto> -vf scale=-2:1280:force_original_aspect_ratio=decrease \
   -c:a aac -b:a 128k -movflags +faststart <saida>.mp4
 ```
 Vertical até 1280px de altura, `faststart` (começa a tocar antes de baixar tudo).
+
+O painel grava o identificador do envio no navegador. Se a conexão cair, a administradora
+seleciona o mesmo arquivo e salva novamente para continuar do último bloco confirmado.
+Uploads incompletos expiram após sete dias. O `client_body_timeout` do nginx é 600s.
 
 ## Isolamento
 Usuário próprio sem shell, diretórios próprios, porta própria e limites no systemd
